@@ -1,0 +1,38 @@
+body {
+  margin: 0;
+  font-family: "Segoe UI", sans-serif;
+  background: #f4f6f9;
+  color: #1f2937;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 25px;
+  background: white;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.logo {
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.nav-buttons button {
+  margin-left: 10px;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  background: #e5e7eb;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.nav-buttons button:hover {
+  background: #d1d5db;
+}
+
+main {
+  padding: 20px;
+}
