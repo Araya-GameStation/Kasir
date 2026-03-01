@@ -1,5 +1,5 @@
 // ===================================
-// GARIS WAKTU POS - FULL CORE STABLE
+// GARIS WAKTU POS - FIXED FULL CORE
 // ===================================
 
 const app = document.getElementById("app");
@@ -49,6 +49,12 @@ function generateId() {
 ////////////////////////////////////////////////////
 
 function renderKasir() {
+
+  // Auto pilih kategori pertama kalau belum ada
+  if (!state.currentCategory && db.categories.length > 0) {
+    state.currentCategory = db.categories[0].id;
+  }
+
   app.innerHTML = `
     <div class="pos-container">
 
@@ -192,7 +198,6 @@ function renderMenu() {
 
     <input type="text" id="newCategory" placeholder="Nama Kategori">
     <button onclick="addCategory()">Tambah</button>
-    <button onclick="toggleCategoryManage()">Kelola</button>
 
     <div id="categoryList"></div>
   `;
@@ -206,11 +211,7 @@ function addCategory() {
 
   db.categories.push({ id: generateId(), name });
   saveDB();
-  renderMenu();
-}
 
-function toggleCategoryManage() {
-  state.manageMode = !state.manageMode;
   renderMenu();
 }
 
@@ -224,35 +225,11 @@ function renderCategoryList() {
 
   list.innerHTML = db.categories.map(cat => `
     <div style="margin:10px 0; padding:10px; background:white; border-radius:8px;">
-      ${
-        state.manageMode
-          ? `<input type="checkbox" class="cat-check" value="${cat.id}"> ${cat.name}`
-          : `<span onclick="openCategory(${cat.id})" style="cursor:pointer;">${cat.name}</span>`
-      }
+      <span onclick="openCategory(${cat.id})" style="cursor:pointer;">
+        ${cat.name}
+      </span>
     </div>
   `).join("");
-
-  if (state.manageMode) {
-    list.innerHTML += `
-      <button onclick="deleteSelectedCategories()">Hapus Terpilih</button>
-    `;
-  }
-}
-
-function deleteSelectedCategories() {
-  const checked = Array.from(document.querySelectorAll(".cat-check:checked"))
-    .map(c => parseInt(c.value));
-
-  if (checked.length === 0) return;
-
-  if (!confirm("Hapus kategori terpilih?")) return;
-
-  db.categories = db.categories.filter(c => !checked.includes(c.id));
-  db.menus = db.menus.filter(m => !checked.includes(m.categoryId));
-
-  saveDB();
-  state.manageMode = false;
-  renderMenu();
 }
 
 function openCategory(id) {
@@ -270,7 +247,6 @@ function renderCategoryDetail(categoryId) {
     <input type="text" id="menuName" placeholder="Nama Menu">
     <input type="number" id="menuPrice" placeholder="Harga">
     <button onclick="addMenu(${categoryId})">Tambah Menu</button>
-    <button onclick="toggleMenuManage()">Kelola</button>
 
     <div id="menuList"></div>
   `;
@@ -292,12 +268,8 @@ function addMenu(categoryId) {
   });
 
   saveDB();
-  renderCategoryDetail(categoryId);
-}
 
-function toggleMenuManage() {
-  state.manageMode = !state.manageMode;
-  renderCategoryDetail(state.currentCategory);
+  renderCategoryDetail(categoryId);
 }
 
 function renderMenuList(categoryId) {
@@ -311,33 +283,9 @@ function renderMenuList(categoryId) {
 
   list.innerHTML = menus.map(menu => `
     <div style="margin:10px 0; padding:10px; background:#f3f4f6; border-radius:8px;">
-      ${
-        state.manageMode
-          ? `<input type="checkbox" class="menu-check" value="${menu.id}"> ${menu.name}`
-          : `<strong>${menu.name}</strong> - ${formatRupiah(menu.price)}`
-      }
+      <strong>${menu.name}</strong> - ${formatRupiah(menu.price)}
     </div>
   `).join("");
-
-  if (state.manageMode) {
-    list.innerHTML += `
-      <button onclick="deleteSelectedMenus()">Hapus Terpilih</button>
-    `;
-  }
-}
-
-function deleteSelectedMenus() {
-  const checked = Array.from(document.querySelectorAll(".menu-check:checked"))
-    .map(c => parseInt(c.value));
-
-  if (checked.length === 0) return;
-
-  if (!confirm("Hapus menu terpilih?")) return;
-
-  db.menus = db.menus.filter(m => !checked.includes(m.id));
-  saveDB();
-  state.manageMode = false;
-  renderCategoryDetail(state.currentCategory);
 }
 
 ////////////////////////////////////////////////////
