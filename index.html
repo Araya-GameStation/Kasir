@@ -22,8 +22,9 @@
 <script src="store.js"></script>
 <script src="utils.js"></script>
 <script src="printer.js"></script>
-<!-- FIREBASE CDN (STABLE COMPAT VERSION) -->
+<!-- FIREBASE COMPAT VERSION -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
 <script>
@@ -31,7 +32,7 @@
     apiKey: "AIzaSyBkb9M6RGsZSDSsZPnTn_NpWDZFrdL3dMY",
     authDomain: "garis-waktu-pos.firebaseapp.com",
     projectId: "garis-waktu-pos",
-    storageBucket: "garis-waktu-pos.firebasestorage.app",
+    storageBucket: "garis-waktu-pos.appspot.com",
     messagingSenderId: "113767699030",
     appId: "1:113767699030:web:6432c16dd4afd0218121f7"
   };
@@ -39,6 +40,7 @@
   firebase.initializeApp(firebaseConfig);
   window.dbCloud = firebase.firestore();
 </script>
+
 <script src="app.js"></script>
 </body>
 </html>
