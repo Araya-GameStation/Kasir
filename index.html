@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GARIS WAKTU POS PRO</title>
+<title>KASIR GARIS WAKTU</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -22,6 +22,23 @@
 <script src="store.js"></script>
 <script src="utils.js"></script>
 <script src="printer.js"></script>
+<!-- FIREBASE CDN (STABLE COMPAT VERSION) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyBkb9M6RGsZSDSsZPnTn_NpWDZFrdL3dMY",
+    authDomain: "garis-waktu-pos.firebaseapp.com",
+    projectId: "garis-waktu-pos",
+    storageBucket: "garis-waktu-pos.firebasestorage.app",
+    messagingSenderId: "113767699030",
+    appId: "1:113767699030:web:6432c16dd4afd0218121f7"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  window.dbCloud = firebase.firestore();
+</script>
 <script src="app.js"></script>
 </body>
 </html>
