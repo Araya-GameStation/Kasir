@@ -1,6 +1,6 @@
-// ================================
-// GARIS WAKTU POS - FULL CORE
-// ================================
+// ===================================
+// GARIS WAKTU POS - FULL CORE STABLE
+// ===================================
 
 const app = document.getElementById("app");
 
@@ -21,14 +21,14 @@ function saveDB() {
 }
 
 let state = {
-  currentView: "kasir",
+  view: "kasir",
   currentCategory: null,
   cart: [],
   manageMode: false
 };
 
 function navigate(view) {
-  state.currentView = view;
+  state.view = view;
   state.manageMode = false;
 
   if (view === "kasir") renderKasir();
@@ -44,13 +44,14 @@ function generateId() {
   return Date.now() + Math.floor(Math.random() * 1000);
 }
 
-// ==================
-// KASIR
-// ==================
+////////////////////////////////////////////////////
+// ================== KASIR =======================
+////////////////////////////////////////////////////
 
 function renderKasir() {
   app.innerHTML = `
     <div class="pos-container">
+
       <div class="pos-left">
         ${renderCategoryBar()}
         <div class="menu-grid">
@@ -66,7 +67,7 @@ function renderKasir() {
 
         <div class="payment-section">
           <div class="total">
-            Total: <strong>${formatRupiah(getCartTotal())}</strong>
+            Total: <strong>${formatRupiah(getTotal())}</strong>
           </div>
 
           <div class="quick-cash">
@@ -79,6 +80,7 @@ function renderKasir() {
           <button class="pay-btn" onclick="processPayment()">Bayar</button>
         </div>
       </div>
+
     </div>
   `;
 }
@@ -144,7 +146,7 @@ function renderCart() {
   `).join("");
 }
 
-function getCartTotal() {
+function getTotal() {
   return state.cart.reduce((sum, i) => sum + i.price * i.qty, 0);
 }
 
@@ -153,7 +155,7 @@ function quickPay(amount) {
 }
 
 function processPayment() {
-  const total = getCartTotal();
+  const total = getTotal();
   const paid = parseInt(document.getElementById("manualPay").value);
 
   if (!paid || paid < total) {
@@ -180,9 +182,9 @@ function processPayment() {
   renderKasir();
 }
 
-// ==================
-// MENU MANAGEMENT
-// ==================
+////////////////////////////////////////////////////
+// ================= MENU =========================
+////////////////////////////////////////////////////
 
 function renderMenu() {
   app.innerHTML = `
@@ -224,20 +226,24 @@ function renderCategoryList() {
     <div style="margin:10px 0; padding:10px; background:white; border-radius:8px;">
       ${
         state.manageMode
-          ? `<input type="checkbox" class="cat-check" value="${cat.id}">`
+          ? `<input type="checkbox" class="cat-check" value="${cat.id}"> ${cat.name}`
           : `<span onclick="openCategory(${cat.id})" style="cursor:pointer;">${cat.name}</span>`
       }
     </div>
   `).join("");
 
   if (state.manageMode) {
-    list.innerHTML += `<button onclick="deleteSelectedCategories()">Hapus Terpilih</button>`;
+    list.innerHTML += `
+      <button onclick="deleteSelectedCategories()">Hapus Terpilih</button>
+    `;
   }
 }
 
 function deleteSelectedCategories() {
   const checked = Array.from(document.querySelectorAll(".cat-check:checked"))
     .map(c => parseInt(c.value));
+
+  if (checked.length === 0) return;
 
   if (!confirm("Hapus kategori terpilih?")) return;
 
@@ -307,20 +313,24 @@ function renderMenuList(categoryId) {
     <div style="margin:10px 0; padding:10px; background:#f3f4f6; border-radius:8px;">
       ${
         state.manageMode
-          ? `<input type="checkbox" class="menu-check" value="${menu.id}">`
+          ? `<input type="checkbox" class="menu-check" value="${menu.id}"> ${menu.name}`
           : `<strong>${menu.name}</strong> - ${formatRupiah(menu.price)}`
       }
     </div>
   `).join("");
 
   if (state.manageMode) {
-    list.innerHTML += `<button onclick="deleteSelectedMenus()">Hapus Terpilih</button>`;
+    list.innerHTML += `
+      <button onclick="deleteSelectedMenus()">Hapus Terpilih</button>
+    `;
   }
 }
 
 function deleteSelectedMenus() {
   const checked = Array.from(document.querySelectorAll(".menu-check:checked"))
     .map(c => parseInt(c.value));
+
+  if (checked.length === 0) return;
 
   if (!confirm("Hapus menu terpilih?")) return;
 
@@ -330,9 +340,9 @@ function deleteSelectedMenus() {
   renderCategoryDetail(state.currentCategory);
 }
 
-// ==================
-// RIWAYAT
-// ==================
+////////////////////////////////////////////////////
+// ================= RIWAYAT ======================
+////////////////////////////////////////////////////
 
 function renderRiwayat() {
   if (db.transactions.length === 0) {
