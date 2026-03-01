@@ -1,6 +1,7 @@
-// ================================
-// GARIS WAKTU POS - CLEAN STABLE
-// ================================
+// ===================================
+// GARIS WAKTU POS - FULL VERSION
+// Chrome + Web Bluetooth
+// ===================================
 
 const app = document.getElementById("app");
 
@@ -38,17 +39,39 @@ function renderKasir() {
   }
 
   app.innerHTML = `
-    <h2>KASIR</h2>
+    <h2>KASIR - GARIS WAKTU</h2>
+
+    <button onclick="connectPrinter()">Connect Printer</button>
+
+    <hr>
+
     ${renderCategoryBar()}
+
     <div class="menu-grid">
       ${renderMenuGrid()}
     </div>
+
     <hr>
+
     <h3>Keranjang</h3>
     ${renderCart()}
-    <p>Total: <strong>${formatRupiah(getTotal())}</strong></p>
+
+    <p><strong>Total: ${formatRupiah(getTotal())}</strong></p>
+
+    <div>
+      <button onclick="setQuickPay(10000)">10.000</button>
+      <button onclick="setQuickPay(20000)">20.000</button>
+      <button onclick="setQuickPay(50000)">50.000</button>
+      <button onclick="setQuickPay(100000)">100.000</button>
+    </div>
+
     <input type="number" id="payInput" placeholder="Bayar">
+
     <button onclick="processPayment()">Bayar</button>
+
+    <hr>
+    <button onclick="renderMenu()">Menu</button>
+    <button onclick="renderRiwayat()">Riwayat</button>
   `;
 }
 
@@ -77,7 +100,7 @@ function renderMenuGrid() {
   return menus.map(menu => `
     <div onclick="addToCart(${menu.id})"
          style="padding:10px; border:1px solid #ccc; margin:5px; cursor:pointer;">
-      ${menu.name} <br>
+      ${menu.name}<br>
       ${formatRupiah(menu.price)}
     </div>
   `).join("");
@@ -85,7 +108,11 @@ function renderMenuGrid() {
 
 function addToCart(id) {
   const item = db.menus.find(m => m.id === id);
-  state.cart.push({ ...item });
+
+  const existing = state.cart.find(c => c.id === id);
+  if (existing) existing.qty++;
+  else state.cart.push({ ...item, qty: 1 });
+
   renderKasir();
 }
 
@@ -93,15 +120,26 @@ function renderCart() {
   if (state.cart.length === 0) return "<p>Kosong</p>";
 
   return state.cart.map(i => `
-    <div>${i.name} - ${formatRupiah(i.price)}</div>
+    <div>
+      ${i.name} x${i.qty} - ${formatRupiah(i.price * i.qty)}
+    </div>
   `).join("");
 }
 
 function getTotal() {
-  return state.cart.reduce((sum, i) => sum + i.price, 0);
+  return state.cart.reduce((sum, i) => sum + i.price * i.qty, 0);
 }
 
+function setQuickPay(amount) {
+  document.getElementById("payInput").value = amount;
+}
+
+////////////////////////////////////////////////////
+// =============== PAYMENT ========================
+////////////////////////////////////////////////////
+
 function processPayment() {
+
   const total = getTotal();
   const paid = parseInt(document.getElementById("payInput").value);
 
@@ -110,22 +148,30 @@ function processPayment() {
     return;
   }
 
-  db.transactions.push({
-    id: generateId(),
-    total,
-    date: new Date().toLocaleString()
-  });
+  const change = paid - total;
 
+  const trx = {
+    id: generateId(),
+    items: [...state.cart],
+    total,
+    paid,
+    change,
+    date: new Date().toLocaleString()
+  };
+
+  db.transactions.push(trx);
   saveDB();
 
-  alert("Kembalian: " + formatRupiah(paid - total));
+  printStruk(trx);
+
+  alert("Kembalian: " + formatRupiah(change));
 
   state.cart = [];
   renderKasir();
 }
 
 ////////////////////////////////////////////////////
-// ================= MENU =========================
+// =============== MENU ===========================
 ////////////////////////////////////////////////////
 
 function renderMenu() {
@@ -135,6 +181,8 @@ function renderMenu() {
     <button onclick="addCategory()">Tambah Kategori</button>
     <hr>
     ${renderCategoryList()}
+    <hr>
+    <button onclick="renderKasir()">Kembali</button>
   `;
 }
 
@@ -142,11 +190,7 @@ function addCategory() {
   const name = document.getElementById("catName").value;
   if (!name) return;
 
-  db.categories.push({
-    id: generateId(),
-    name
-  });
-
+  db.categories.push({ id: generateId(), name });
   saveDB();
   renderMenu();
 }
@@ -204,12 +248,12 @@ function renderMenuList(categoryId) {
 }
 
 ////////////////////////////////////////////////////
-// ================= RIWAYAT ======================
+// =============== RIWAYAT ========================
 ////////////////////////////////////////////////////
 
 function renderRiwayat() {
   if (db.transactions.length === 0) {
-    app.innerHTML = "<h2>Belum ada transaksi</h2>";
+    app.innerHTML = "<h2>Belum ada transaksi</h2><button onclick='renderKasir()'>Kembali</button>";
     return;
   }
 
@@ -217,17 +261,56 @@ function renderRiwayat() {
     <div>
       ${t.date} - ${formatRupiah(t.total)}
     </div>
-  `).join("");
+  `).join("") + "<br><button onclick='renderKasir()'>Kembali</button>";
 }
 
 ////////////////////////////////////////////////////
-// ================= NAV ==========================
+// =============== PRINTER ========================
 ////////////////////////////////////////////////////
 
-document.querySelector(".nav-buttons").innerHTML = `
-  <button onclick="renderKasir()">Kasir</button>
-  <button onclick="renderMenu()">Menu</button>
-  <button onclick="renderRiwayat()">Riwayat</button>
-`;
+let printerDevice = null;
+let printerCharacteristic = null;
+
+async function connectPrinter() {
+  try {
+    printerDevice = await navigator.bluetooth.requestDevice({
+      acceptAllDevices: true,
+      optionalServices: [0x18F0]
+    });
+
+    const server = await printerDevice.gatt.connect();
+    const service = await server.getPrimaryService(0x18F0);
+    printerCharacteristic = await service.getCharacteristic(0x2AF1);
+
+    alert("Printer terhubung");
+  } catch (err) {
+    alert("Gagal connect printer");
+  }
+}
+
+function textToBytes(text) {
+  return new TextEncoder().encode(text);
+}
+
+async function printStruk(trx) {
+  if (!printerCharacteristic) return;
+
+  let struk = "";
+  struk += "      GARIS WAKTU\n";
+  struk += "--------------------------\n";
+
+  trx.items.forEach(i => {
+    struk += `${i.name} x${i.qty}\n`;
+    struk += `${formatRupiah(i.price * i.qty)}\n`;
+  });
+
+  struk += "--------------------------\n";
+  struk += `TOTAL : ${formatRupiah(trx.total)}\n`;
+  struk += `BAYAR : ${formatRupiah(trx.paid)}\n`;
+  struk += `KEMBALI : ${formatRupiah(trx.change)}\n\n`;
+  struk += "Terima kasih\n\n\n";
+
+  await printerCharacteristic.writeValue(textToBytes(struk));
+}
 
 renderKasir();
