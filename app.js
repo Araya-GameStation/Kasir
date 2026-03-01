@@ -1,6 +1,6 @@
 
 // ============================================
-// GARIS WAKTU POS - PRO FIREBASE VERSION
+// GARIS WAKTU POS - PRO FIREBASE VERSION (PRINTER ENABLED)
 // ============================================
 
 const app = document.getElementById("app");
@@ -76,9 +76,14 @@ function startRealtimeTransactions(){
 function renderKasir(){
   app.innerHTML=`
     <h2>KASIR - GARIS WAKTU</h2>
-    <button onclick="logout()">Logout</button>
-    <button onclick="renderHistory()">Riwayat</button>
-    <button onclick="renderMenuManager()">Kelola Menu</button>
+
+    <div style="margin-bottom:10px;">
+      <button onclick="connectPrinter()">🖨 Connect Printer</button>
+      <button onclick="logout()">Logout</button>
+      <button onclick="renderHistory()">Riwayat</button>
+      <button onclick="renderMenuManager()">Kelola Menu</button>
+    </div>
+
     <hr>
 
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;">
@@ -95,8 +100,8 @@ function renderKasir(){
     <h3>Keranjang</h3>
     ${state.cart.map(i=>`
       ${i.name} x${i.qty} - Rp ${i.price*i.qty}
-      <button onclick="changeQty('${i.id}',1)">+</button>
       <button onclick="changeQty('${i.id}',-1)">-</button>
+      <button onclick="changeQty('${i.id}',1)">+</button>
       <br>
     `).join("")}
 
@@ -146,16 +151,67 @@ function bayar(){
     return;
   }
 
-  dbCloud.collection("transactions").add({
+  const trx = {
     items: state.cart,
     total: total,
     paid: paid,
     change: paid-total,
     date: new Date()
-  });
+  };
+
+  dbCloud.collection("transactions").add(trx);
+
+  printStruk(trx);
 
   state.cart=[];
   renderKasir();
+}
+
+// ================= PRINTER =================
+
+let printerDevice = null;
+let printerCharacteristic = null;
+
+async function connectPrinter(){
+  try{
+    printerDevice = await navigator.bluetooth.requestDevice({
+      acceptAllDevices:true,
+      optionalServices:[0x18F0]
+    });
+
+    const server = await printerDevice.gatt.connect();
+    const service = await server.getPrimaryService(0x18F0);
+    printerCharacteristic = await service.getCharacteristic(0x2AF1);
+
+    alert("Printer terhubung");
+  }catch(e){
+    alert("Gagal connect printer");
+  }
+}
+
+function textToBytes(text){
+  return new TextEncoder().encode(text);
+}
+
+async function printStruk(trx){
+  if(!printerCharacteristic) return;
+
+  let s = "";
+  s += "        GARIS WAKTU\n";
+  s += "--------------------------\n";
+
+  trx.items.forEach(i=>{
+    s += `${i.name} x${i.qty}\n`;
+    s += `Rp ${i.price*i.qty}\n`;
+  });
+
+  s += "--------------------------\n";
+  s += `TOTAL   : Rp ${trx.total}\n`;
+  s += `BAYAR   : Rp ${trx.paid}\n`;
+  s += `KEMBALI : Rp ${trx.change}\n\n`;
+  s += "Terima kasih sudah mampir\n\n\n";
+
+  await printerCharacteristic.writeValue(textToBytes(s));
 }
 
 // ================== HISTORY ==================
