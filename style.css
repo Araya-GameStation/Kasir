@@ -1,38 +1,110 @@
-body {
-  margin: 0;
-  font-family: "Segoe UI", sans-serif;
-  background: #f4f6f9;
-  color: #1f2937;
-}
-
-.topbar {
+.pos-container {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 15px 25px;
+  height: calc(100vh - 80px);
+}
+
+.pos-left {
+  flex: 2;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+}
+
+.pos-right {
+  flex: 1;
   background: white;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid #eee;
 }
 
-.logo {
-  font-weight: 600;
-  font-size: 18px;
+.category-bar {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  margin-bottom: 15px;
 }
 
-.nav-buttons button {
-  margin-left: 10px;
+.category-bar button {
   padding: 8px 14px;
   border: none;
-  border-radius: 8px;
+  border-radius: 20px;
   background: #e5e7eb;
   cursor: pointer;
-  transition: 0.2s;
 }
 
-.nav-buttons button:hover {
-  background: #d1d5db;
+.category-bar button.active {
+  background: #1f2937;
+  color: white;
 }
 
-main {
-  padding: 20px;
+.menu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.menu-card {
+  background: white;
+  padding: 15px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  cursor: pointer;
+  transition: 0.15s;
+}
+
+.menu-card:hover {
+  transform: scale(0.98);
+}
+
+.menu-name {
+  font-weight: 500;
+}
+
+.menu-price {
+  margin-top: 8px;
+  color: #6b7280;
+}
+
+.cart-section {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.cart-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.payment-section {
+  border-top: 1px solid #eee;
+  padding-top: 10px;
+}
+
+.quick-cash {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.quick-cash button {
+  flex: 1;
+  padding: 8px;
+}
+
+.pay-btn {
+  width: 100%;
+  padding: 10px;
+  background: #1f2937;
+  color: white;
+  border: none;
+  border-radius: 8px;
+}
+
+.empty-msg {
+  color: #9ca3af;
 }
