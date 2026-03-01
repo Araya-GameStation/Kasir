@@ -1,5 +1,5 @@
 // ================================
-// GARIS WAKTU POS - FULL KASIR UI
+// GARIS WAKTU POS - FULL CORE
 // ================================
 
 const app = document.getElementById("app");
@@ -10,8 +10,6 @@ const defaultDB = {
   transactions: [],
   settings: {
     storeName: "GARIS WAKTU",
-    theme: "light",
-    paperSize: "58mm",
     quickCash: [10000, 20000, 50000, 100000]
   }
 };
@@ -29,14 +27,13 @@ let state = {
   manageMode: false
 };
 
-function navigate(view, data = null) {
+function navigate(view) {
   state.currentView = view;
   state.manageMode = false;
 
   if (view === "kasir") renderKasir();
   if (view === "menu") renderMenu();
   if (view === "riwayat") renderRiwayat();
-  if (view === "pengaturan") renderPengaturan();
 }
 
 function formatRupiah(num) {
@@ -47,9 +44,9 @@ function generateId() {
   return Date.now() + Math.floor(Math.random() * 1000);
 }
 
-// ======================
-// ===== KASIR UI =======
-// ======================
+// ==================
+// KASIR
+// ==================
 
 function renderKasir() {
   app.innerHTML = `
@@ -64,9 +61,7 @@ function renderKasir() {
       <div class="pos-right">
         <div class="cart-section">
           <h3>Keranjang</h3>
-          <div id="cartItems">
-            ${renderCartItems()}
-          </div>
+          ${renderCart()}
         </div>
 
         <div class="payment-section">
@@ -89,9 +84,8 @@ function renderKasir() {
 }
 
 function renderCategoryBar() {
-  if (db.categories.length === 0) {
+  if (db.categories.length === 0)
     return `<div class="empty-msg">Belum ada kategori</div>`;
-  }
 
   return `
     <div class="category-bar">
@@ -112,41 +106,35 @@ function selectCategory(id) {
 }
 
 function renderMenuGrid() {
-  if (!state.currentCategory) {
+  if (!state.currentCategory)
     return `<div class="empty-msg">Pilih kategori</div>`;
-  }
 
   const menus = db.menus.filter(m => m.categoryId === state.currentCategory);
 
-  if (menus.length === 0) {
+  if (menus.length === 0)
     return `<div class="empty-msg">Belum ada menu</div>`;
-  }
 
   return menus.map(menu => `
     <div class="menu-card" onclick="addToCart(${menu.id})">
-      <div class="menu-name">${menu.name}</div>
-      <div class="menu-price">${formatRupiah(menu.price)}</div>
+      <div>${menu.name}</div>
+      <div>${formatRupiah(menu.price)}</div>
     </div>
   `).join("");
 }
 
 function addToCart(menuId) {
   const item = db.menus.find(m => m.id === menuId);
-
   const existing = state.cart.find(c => c.id === menuId);
-  if (existing) {
-    existing.qty += 1;
-  } else {
-    state.cart.push({ ...item, qty: 1 });
-  }
+
+  if (existing) existing.qty++;
+  else state.cart.push({ ...item, qty: 1 });
 
   renderKasir();
 }
 
-function renderCartItems() {
-  if (state.cart.length === 0) {
+function renderCart() {
+  if (state.cart.length === 0)
     return `<div class="empty-msg">Kosong</div>`;
-  }
 
   return state.cart.map(item => `
     <div class="cart-item">
@@ -157,7 +145,7 @@ function renderCartItems() {
 }
 
 function getCartTotal() {
-  return state.cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+  return state.cart.reduce((sum, i) => sum + i.price * i.qty, 0);
 }
 
 function quickPay(amount) {
@@ -192,24 +180,174 @@ function processPayment() {
   renderKasir();
 }
 
-// ======================
-// EMPTY OTHER VIEWS
-// ======================
+// ==================
+// MENU MANAGEMENT
+// ==================
 
 function renderMenu() {
-  app.innerHTML = "<h2>MENU MANAGEMENT NEXT</h2>";
+  app.innerHTML = `
+    <h2>Kelola Kategori</h2>
+
+    <input type="text" id="newCategory" placeholder="Nama Kategori">
+    <button onclick="addCategory()">Tambah</button>
+    <button onclick="toggleCategoryManage()">Kelola</button>
+
+    <div id="categoryList"></div>
+  `;
+
+  renderCategoryList();
 }
+
+function addCategory() {
+  const name = document.getElementById("newCategory").value.trim();
+  if (!name) return;
+
+  db.categories.push({ id: generateId(), name });
+  saveDB();
+  renderMenu();
+}
+
+function toggleCategoryManage() {
+  state.manageMode = !state.manageMode;
+  renderMenu();
+}
+
+function renderCategoryList() {
+  const list = document.getElementById("categoryList");
+
+  if (db.categories.length === 0) {
+    list.innerHTML = "<p>Belum ada kategori</p>";
+    return;
+  }
+
+  list.innerHTML = db.categories.map(cat => `
+    <div style="margin:10px 0; padding:10px; background:white; border-radius:8px;">
+      ${
+        state.manageMode
+          ? `<input type="checkbox" class="cat-check" value="${cat.id}">`
+          : `<span onclick="openCategory(${cat.id})" style="cursor:pointer;">${cat.name}</span>`
+      }
+    </div>
+  `).join("");
+
+  if (state.manageMode) {
+    list.innerHTML += `<button onclick="deleteSelectedCategories()">Hapus Terpilih</button>`;
+  }
+}
+
+function deleteSelectedCategories() {
+  const checked = Array.from(document.querySelectorAll(".cat-check:checked"))
+    .map(c => parseInt(c.value));
+
+  if (!confirm("Hapus kategori terpilih?")) return;
+
+  db.categories = db.categories.filter(c => !checked.includes(c.id));
+  db.menus = db.menus.filter(m => !checked.includes(m.categoryId));
+
+  saveDB();
+  state.manageMode = false;
+  renderMenu();
+}
+
+function openCategory(id) {
+  state.currentCategory = id;
+  renderCategoryDetail(id);
+}
+
+function renderCategoryDetail(categoryId) {
+  const category = db.categories.find(c => c.id === categoryId);
+
+  app.innerHTML = `
+    <button onclick="renderMenu()">← Kembali</button>
+    <h2>${category.name}</h2>
+
+    <input type="text" id="menuName" placeholder="Nama Menu">
+    <input type="number" id="menuPrice" placeholder="Harga">
+    <button onclick="addMenu(${categoryId})">Tambah Menu</button>
+    <button onclick="toggleMenuManage()">Kelola</button>
+
+    <div id="menuList"></div>
+  `;
+
+  renderMenuList(categoryId);
+}
+
+function addMenu(categoryId) {
+  const name = document.getElementById("menuName").value.trim();
+  const price = parseInt(document.getElementById("menuPrice").value);
+
+  if (!name || !price) return;
+
+  db.menus.push({
+    id: generateId(),
+    name,
+    price,
+    categoryId
+  });
+
+  saveDB();
+  renderCategoryDetail(categoryId);
+}
+
+function toggleMenuManage() {
+  state.manageMode = !state.manageMode;
+  renderCategoryDetail(state.currentCategory);
+}
+
+function renderMenuList(categoryId) {
+  const list = document.getElementById("menuList");
+  const menus = db.menus.filter(m => m.categoryId === categoryId);
+
+  if (menus.length === 0) {
+    list.innerHTML = "<p>Belum ada menu</p>";
+    return;
+  }
+
+  list.innerHTML = menus.map(menu => `
+    <div style="margin:10px 0; padding:10px; background:#f3f4f6; border-radius:8px;">
+      ${
+        state.manageMode
+          ? `<input type="checkbox" class="menu-check" value="${menu.id}">`
+          : `<strong>${menu.name}</strong> - ${formatRupiah(menu.price)}`
+      }
+    </div>
+  `).join("");
+
+  if (state.manageMode) {
+    list.innerHTML += `<button onclick="deleteSelectedMenus()">Hapus Terpilih</button>`;
+  }
+}
+
+function deleteSelectedMenus() {
+  const checked = Array.from(document.querySelectorAll(".menu-check:checked"))
+    .map(c => parseInt(c.value));
+
+  if (!confirm("Hapus menu terpilih?")) return;
+
+  db.menus = db.menus.filter(m => !checked.includes(m.id));
+  saveDB();
+  state.manageMode = false;
+  renderCategoryDetail(state.currentCategory);
+}
+
+// ==================
+// RIWAYAT
+// ==================
 
 function renderRiwayat() {
-  app.innerHTML = "<h2>RIWAYAT NEXT</h2>";
-}
+  if (db.transactions.length === 0) {
+    app.innerHTML = "<h2>Belum ada transaksi</h2>";
+    return;
+  }
 
-function renderPengaturan() {
-  app.innerHTML = "<h2>PENGATURAN NEXT</h2>";
-}
-
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register("service-worker.js");
+  app.innerHTML = `
+    <h2>Riwayat</h2>
+    ${db.transactions.map(trx => `
+      <div style="margin-bottom:10px; padding:10px; background:white; border-radius:8px;">
+        ${trx.date} - ${formatRupiah(trx.total)}
+      </div>
+    `).join("")}
+  `;
 }
 
 navigate("kasir");
