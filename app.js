@@ -1,6 +1,6 @@
 
 // ============================================
-// GARIS WAKTU POS - PRO FIREBASE VERSION (PRINTER ENABLED)
+// GARIS WAKTU POS - PRO FIREBASE VERSION (FIXED)
 // ============================================
 
 const app = document.getElementById("app");
@@ -18,13 +18,18 @@ let state = {
 // ================= FIREBASE AUTH =================
 
 firebase.auth().onAuthStateChanged(function(user){
-  state.user = user;
-  if(!user){
+  try{
+    state.user = user;
+    if(!user){
+      renderLogin();
+    }else{
+      startRealtimeMenus();
+      startRealtimeTransactions();
+      renderKasir();
+    }
+  }catch(e){
+    console.error("Auth error:", e);
     renderLogin();
-  }else{
-    startRealtimeMenus();
-    startRealtimeTransactions();
-    renderKasir();
   }
 });
 
@@ -57,18 +62,17 @@ function startRealtimeMenus(){
       state.menus.push({id:doc.id,...doc.data()});
     });
     renderKasir();
-  });
+  }, err=>console.error("Menu listener error:", err));
 }
 
 function startRealtimeTransactions(){
   dbCloud.collection("transactions")
-  .orderBy("date","desc")
   .onSnapshot(snap=>{
     state.transactions=[];
     snap.forEach(doc=>{
       state.transactions.push({id:doc.id,...doc.data()});
     });
-  });
+  }, err=>console.error("Transaction listener error:", err));
 }
 
 // ================== KASIR ==================
