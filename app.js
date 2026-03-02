@@ -4,8 +4,6 @@
 
 const app = document.getElementById("app");
 
-// ================= FORMAT RUPIAH =================
-
 function formatRupiah(num){
   return new Intl.NumberFormat("id-ID").format(num || 0);
 }
@@ -18,8 +16,6 @@ function formatInputRupiah(input){
   }
   input.value = new Intl.NumberFormat("id-ID").format(parseInt(value));
 }
-
-// ================= STATE =================
 
 let state = {
   user: null,
@@ -126,16 +122,23 @@ function renderKasir(){
   state.currentView="kasir";
 
   const sortedCategories = [
-    ...state.categories
-      .filter(c=>!c.system)
+    ...state.categories.filter(c=>!c.system)
       .sort((a,b)=>a.name.localeCompare(b.name)),
     ...state.categories.filter(c=>c.system)
+  ];
+
+  const categoryNames = [
+    "ALL",
+    ...sortedCategories.map(c=>c.name)
   ];
 
   const filteredMenus = (
     state.selectedCategory === "ALL"
     ? state.menus
-    : state.menus.filter(m=>m.categoryId===state.selectedCategory)
+    : state.menus.filter(m=>{
+        const cat = state.categories.find(c=>c.id===m.categoryId);
+        return cat && cat.name === state.selectedCategory;
+      })
   ).sort((a,b)=>a.name.localeCompare(b.name));
 
   app.innerHTML=`
@@ -151,15 +154,12 @@ function renderKasir(){
     <hr>
 
     <div style="margin-bottom:10px;">
-      <button onclick="selectCategory('ALL')"
-        style="${state.selectedCategory==='ALL'?'background:#6366f1;color:white;':''}">
-        ALL
-      </button>
-      ${sortedCategories.map(c=>`
+      ${categoryNames.map(c=>`
         <button 
-          onclick="selectCategory('${c.id}')"
-          style="${state.selectedCategory===c.id?'background:#6366f1;color:white;':''}">
-          ${c.name}
+          onclick="selectCategory('${c}')"
+          style="margin-right:5px;
+          ${state.selectedCategory===c?'background:#6366f1;color:white;':''}">
+          ${c}
         </button>
       `).join("")}
     </div>
@@ -204,8 +204,7 @@ function renderKasir(){
     <button onclick="setPay(100000)">100K</button>
     <button onclick="setPay(getTotal())">Uang Pas</button><br><br>
 
-    <input id="payInput" type="text" placeholder="Bayar"
-      oninput="formatInputRupiah(this)"><br><br>
+    <input id="payInput" type="text" placeholder="Bayar" oninput="formatInputRupiah(this)"><br><br>
     <button id="btnBayar" onclick="bayar()">Bayar</button>
   `;
 }
@@ -238,9 +237,11 @@ function changeQty(id,d){
   if(!item) return;
 
   const menu = state.menus.find(m=>m.id===id);
+
   if(menu.useStock && (item.qty+d)>menu.stock) return;
 
   item.qty+=d;
+
   if(item.qty<=0){
     state.cart=state.cart.filter(i=>i.id!==id);
   }
@@ -253,7 +254,7 @@ function getTotal(){
 }
 
 function setPay(v){
-  document.getElementById("payInput").value=formatRupiah(v);
+  document.getElementById("payInput").value=v;
 }
 
 // ================= BAYAR =================
@@ -300,7 +301,7 @@ async function bayar(){
     total: total,
     paid: paid,
     change: paid-total,
-    date: firebase.firestore.FieldValue.serverTimestamp()
+    date: new Date()
   };
 
   await dbCloud.collection("transactions").add(trx);
@@ -341,20 +342,6 @@ function renderHistory(){
     });
   });
 
-  const sortedTransactions = [...state.transactions]
-    .sort((a,b)=>{
-
-      const da = a.date?.seconds
-        ? a.date.seconds * 1000
-        : new Date(a.date).getTime();
-
-      const db = b.date?.seconds
-        ? b.date.seconds * 1000
-        : new Date(b.date).getTime();
-
-      return db - da; // terbaru di atas
-    });
-
   app.innerHTML=`
     <h2>Riwayat Transaksi</h2>
 
@@ -367,14 +354,20 @@ function renderHistory(){
     ${Object.keys(recap)
       .sort((a,b)=>a.localeCompare(b))
       .map(name=>`
-        ${name} - ${recap[name].qty} pcs - Rp ${formatRupiah(recap[name].total)}<br>
-      `).join("")}
+      ${name} - ${recap[name].qty} pcs - Rp ${formatRupiah(recap[name].total)}<br>
+    `).join("")}
 
     <br><b>Total Pendapatan Hari Ini: Rp ${formatRupiah(totalIncome)}</b>
 
     <hr>
 
-    ${sortedTransactions.map(t=>`
+    ${[...state.transactions]
+      .sort((a,b)=>{
+        const da = new Date(a.date.seconds? a.date.seconds*1000 : a.date);
+        const db = new Date(b.date.seconds? b.date.seconds*1000 : b.date);
+        return db - da;
+      })
+      .map(t=>`
       <div style="border:1px solid #ccc;padding:8px;margin-bottom:5px;">
         <input type="checkbox"
           ${state.selectedHistory.has(t.id)?'checked':''}
@@ -450,13 +443,6 @@ function renderMenuManager(){
 
   state.currentView="menuManager";
 
-  const sortedCategories = [
-    ...state.categories
-      .filter(c=>!c.system)
-      .sort((a,b)=>a.name.localeCompare(b.name)),
-    ...state.categories.filter(c=>c.system)
-  ];
-
   app.innerHTML=`
     <h2>Kelola Kategori</h2>
 
@@ -465,7 +451,7 @@ function renderMenuManager(){
 
     <hr>
 
-    ${sortedCategories.map(c=>`
+    ${state.categories.map(c=>`
       ${c.name}
       ${!c.system?`<button onclick="deleteCategory('${c.id}')">Hapus</button>`:''}
       <button onclick="openCategory('${c.id}')">Buka</button>
@@ -476,3 +462,131 @@ function renderMenuManager(){
     <button onclick="renderKasir()">Kembali</button>
   `;
 }
+
+function addCategory(){
+  const name=document.getElementById("newCategory").value;
+  if(!name) return;
+
+  dbCloud.collection("categories").add({
+    name:name,
+    system:false
+  });
+}
+
+async function deleteCategory(id){
+
+  if(!confirm("Yakin hapus kategori? Semua menu akan dipindahkan ke Lainnya.")){
+    return;
+  }
+
+  const lainnya = state.categories.find(c=>c.system);
+  const menusToMove = state.menus.filter(m=>m.categoryId===id);
+
+  for(const m of menusToMove){
+    await dbCloud.collection("menus").doc(m.id).update({
+      categoryId:lainnya.id
+    });
+  }
+
+  await dbCloud.collection("categories").doc(id).delete();
+}
+
+function openCategory(id){
+
+  state.currentView="openCategory";
+  state.currentCategoryId=id;
+
+  const category = state.categories.find(c=>c.id===id);
+  const menus = state.menus.filter(m=>m.categoryId===id);
+
+  app.innerHTML=`
+    <h2>Kategori: ${category.name}</h2>
+
+    <input id="menuName" placeholder="Nama Menu">
+    <input id="menuPrice" type="number" placeholder="Harga">
+    <label><input type="checkbox" id="useStock"> Gunakan Stok</label>
+    <input id="stock" type="number" placeholder="Jumlah Stok">
+    <button onclick="addMenu('${id}')">Tambah Menu</button>
+
+    <hr>
+
+    <button onclick="toggleSelectAllMenu('${id}')">Pilih Semua</button>
+    <button id="btnHapusMenu" onclick="deleteSelectedMenus('${id}')">Hapus Terpilih</button>
+
+    <hr>
+
+    ${menus.map(m=>`
+      <input type="checkbox"
+        ${state.selectedMenus.has(m.id)?'checked':''}
+        onchange="toggleSelectMenu('${m.id}')">
+      ${m.name} - Rp ${formatRupiah(m.price)}
+      ${m.useStock?`(Stok: ${m.stock})`:''}
+      <br>
+    `).join("")}
+
+    <hr>
+    <button onclick="renderMenuManager()">Kembali</button>
+  `;
+}
+
+function addMenu(categoryId){
+
+  const name=document.getElementById("menuName").value;
+  const price=parseInt(document.getElementById("menuPrice").value);
+  const useStock=document.getElementById("useStock").checked;
+  const stock=parseInt(document.getElementById("stock").value)||0;
+
+  if(!name||!price) return;
+
+  dbCloud.collection("menus").add({
+    name:name,
+    price:price,
+    categoryId:categoryId,
+    useStock:useStock,
+    stock:useStock?stock:0,
+    active:true
+  });
+}
+
+function toggleSelectMenu(id){
+  if(state.selectedMenus.has(id))
+    state.selectedMenus.delete(id);
+  else
+    state.selectedMenus.add(id);
+}
+
+function toggleSelectAllMenu(categoryId){
+  const menus = state.menus.filter(m=>m.categoryId===categoryId);
+
+  if(state.selectedMenus.size===menus.length){
+    state.selectedMenus.clear();
+  }else{
+    menus.forEach(m=>state.selectedMenus.add(m.id));
+  }
+
+  openCategory(categoryId);
+}
+
+async function deleteSelectedMenus(categoryId){
+
+  if(state.selectedMenus.size===0){
+    alert("Tidak ada yang dipilih");
+    return;
+  }
+
+  if(!confirm("Yakin hapus menu terpilih?")) return;
+
+  const btn=document.getElementById("btnHapusMenu");
+  btn.disabled=true;
+  btn.innerText="Menghapus...";
+
+  const ids=[...state.selectedMenus];
+
+  await Promise.all(
+    ids.map(id=>dbCloud.collection("menus").doc(id).delete())
+  );
+
+  state.selectedMenus.clear();
+  openCategory(categoryId);
+}
+
