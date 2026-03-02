@@ -1,5 +1,3 @@
-
-
 let printerDevice = null;
 let printerCharacteristic = null;
 
@@ -24,14 +22,32 @@ async function connectPrinter(){
  }
 }
 
+////////////////////////////////////////////////////
+// CEPAT TAPI AMAN
+////////////////////////////////////////////////////
+
 async function writeInChunks(data){
+
   const chunkSize = 100;
+  const delay = 10;
+
   for(let i=0; i<data.length; i+=chunkSize){
+
     const chunk = data.slice(i, i+chunkSize);
-    await printerCharacteristic.writeValue(chunk);
-    await new Promise(r=>setTimeout(r, 30));
+
+    if(printerCharacteristic.writeValueWithoutResponse){
+      await printerCharacteristic.writeValueWithoutResponse(chunk);
+    }else{
+      await printerCharacteristic.writeValue(chunk);
+    }
+
+    await new Promise(r=>setTimeout(r, delay));
   }
 }
+
+////////////////////////////////////////////////////
+// PRINT STRUK
+////////////////////////////////////////////////////
 
 async function printStruk(trx){
 
@@ -71,8 +87,7 @@ async function printStruk(trx){
  bytes.push(...encoder.encode("JL A YANI KM 14,8 KEL GAMBUT\n"));
  bytes.push(...encoder.encode("KEC GAMBUT KAB BANJAR, 70652\n"));
 
- bytes.push(...encoder.encode("\n"));
- bytes.push(...encoder.encode("--------------------------------\n"));
+ bytes.push(...encoder.encode("\n--------------------------------\n"));
 
  bytes.push(0x1B, 0x61, 0x00);
 
@@ -104,22 +119,16 @@ async function printStruk(trx){
  bytes.push(0x1B, 0x61, 0x01);
  bytes.push(...encoder.encode("Terima kasih sudah mampir\n"));
 
- bytes.push(...encoder.encode("\n--------------------------------\n\n"));
-
+ bytes.push(...encoder.encode("--------------------------------\n"));
  bytes.push(...encoder.encode("WhatsApp: 085147520182\n"));
  bytes.push(...encoder.encode("Instagram: @arayagamestation\n\n\n"));
 
  bytes.push(...encoder.encode("\n\n\n"));
 
- try{
-  await writeInChunks(new Uint8Array(bytes));
- }catch(e){
-  alert("Gagal print, coba ulangi");
- }
+ await writeInChunks(new Uint8Array(bytes));
 }
 
 function padLeft(text, width){
  text = text.toString();
  return " ".repeat(Math.max(0, width - text.length)) + text;
 }
-
