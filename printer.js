@@ -87,7 +87,7 @@ async function printStruk(trx){
  bytes.push(...encoder.encode("JL A YANI KM 14,8 KEL GAMBUT\n"));
  bytes.push(...encoder.encode("KEC GAMBUT KAB BANJAR, 70652\n"));
 
- bytes.push(...encoder.encode("\n--------------------------------\n"));
+ bytes.push(...encoder.encode("--------------------------------\n"));
 
  bytes.push(0x1B, 0x61, 0x00);
 
