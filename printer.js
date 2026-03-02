@@ -107,7 +107,7 @@ async function printStruk(trx){
  bytes.push(...encoder.encode("WhatsApp: 085147520182\n"));
  bytes.push(...encoder.encode("Instagram: @arayagamestation\n\n\n"));
 
-// Spasi bawah
+ // Spasi bawah
  bytes.push(...encoder.encode("\n\n\n"));
  
  await printerCharacteristic.writeValue(new Uint8Array(bytes));
