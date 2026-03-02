@@ -19,7 +19,7 @@ async function connectPrinter(){
 }
 
 ////////////////////////////////////////////////////
-// STRUK PREMIUM - HEADER BESAR & TIDAK KEPOTONG
+// STRUK FINAL - HEADER LENGKAP + FOOTER KONTAK
 ////////////////////////////////////////////////////
 
 async function printStruk(trx){
@@ -49,7 +49,7 @@ async function printStruk(trx){
  // Bold ON
  bytes.push(0x1B, 0x45, 0x01);
 
- // Double width + double height
+ // Double size
  bytes.push(0x1D, 0x21, 0x11);
 
  bytes.push(...encoder.encode("GARIS WAKTU\n"));
@@ -57,6 +57,10 @@ async function printStruk(trx){
  // Kembali normal
  bytes.push(0x1D, 0x21, 0x00);
  bytes.push(0x1B, 0x45, 0x00);
+
+ // Alamat
+ bytes.push(...encoder.encode("JL A YANI KM 14,8 KEL GAMBUT\n"));
+ bytes.push(...encoder.encode("KEC GAMBUT KAB BANJAR, 70652\n"));
 
  bytes.push(...encoder.encode("--------------------------------\n"));
 
@@ -86,7 +90,15 @@ async function printStruk(trx){
    "KEMBALI : " + padLeft("Rp " + trx.change, 18) + "\n"
  ));
 
- bytes.push(...encoder.encode("\nTerima kasih sudah mampir\n\n\n\n"));
+ // Footer
+ bytes.push(...encoder.encode("\nTerima kasih sudah mampir\n"));
+ bytes.push(...encoder.encode("--------------------------------\n"));
+
+ // Center kontak
+ bytes.push(0x1B, 0x61, 0x01);
+
+ bytes.push(...encoder.encode("WhatsApp: 085147520182\n"));
+ bytes.push(...encoder.encode("Instagram: @arayagamestation\n\n\n\n"));
 
  await printerCharacteristic.writeValue(new Uint8Array(bytes));
 }
