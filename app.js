@@ -519,7 +519,7 @@ function openCategory(id){
       <input type="checkbox"
         ${state.selectedMenus.has(m.id)?'checked':''}
         onchange="toggleSelectMenu('${m.id}')">
-      ${m.name} - Rp ${formatRupiah(m.price)}
+      ${m.name} - Rp ${formatRupiah(m.price)} <button onclick="editMenu('${m.id}')">Edit</button>
       ${m.useStock?`(Stok: ${m.stock})`:''}
       <br>
     `).join("")}
@@ -545,6 +545,40 @@ function addMenu(categoryId){
     useStock:useStock,
     stock:useStock?stock:0,
     active:true
+  });
+}
+
+
+function editMenu(id){
+
+  const menu = state.menus.find(m=>m.id===id);
+  if(!menu) return;
+
+  const newName = prompt("Nama Menu:", menu.name);
+  if(newName===null || newName.trim()==="") return;
+
+  const newPrice = prompt("Harga:", menu.price);
+  if(newPrice===null || isNaN(parseInt(newPrice))) return;
+
+  let useStock = menu.useStock;
+  let newStock = menu.stock;
+
+  const confirmStock = confirm("Gunakan sistem stok untuk menu ini?");
+  useStock = confirmStock;
+
+  if(useStock){
+    const stockInput = prompt("Jumlah Stok:", menu.stock);
+    if(stockInput===null || isNaN(parseInt(stockInput))) return;
+    newStock = parseInt(stockInput);
+  }else{
+    newStock = 0;
+  }
+
+  dbCloud.collection("menus").doc(id).update({
+    name: newName.trim(),
+    price: parseInt(newPrice),
+    useStock: useStock,
+    stock: newStock
   });
 }
 
