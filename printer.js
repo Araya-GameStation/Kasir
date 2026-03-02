@@ -1,5 +1,11 @@
+
+
 let printerDevice = null;
 let printerCharacteristic = null;
+
+function formatRupiah(num){
+  return new Intl.NumberFormat("id-ID").format(num || 0);
+}
 
 async function connectPrinter(){
  try{
@@ -18,11 +24,21 @@ async function connectPrinter(){
  }
 }
 
-////////////////////////////////////////////////////
-// STRUK GARIS WAKTU
-////////////////////////////////////////////////////
+async function writeInChunks(data){
+  const chunkSize = 100;
+  for(let i=0; i<data.length; i+=chunkSize){
+    const chunk = data.slice(i, i+chunkSize);
+    await printerCharacteristic.writeValue(chunk);
+    await new Promise(r=>setTimeout(r, 30));
+  }
+}
 
 async function printStruk(trx){
+
+ if(!printerDevice || !printerDevice.gatt.connected){
+  alert("Printer tidak terhubung");
+  return;
+ }
 
  if(!printerCharacteristic) return;
 
@@ -40,36 +56,24 @@ async function printStruk(trx){
  const encoder = new TextEncoder();
  let bytes = [];
 
- // Spasi atas
  bytes.push(...encoder.encode("\n\n\n"));
 
- // Center
  bytes.push(0x1B, 0x61, 0x01);
-
- // Bold ON
  bytes.push(0x1B, 0x45, 0x01);
-
- // Double size
  bytes.push(0x1D, 0x21, 0x11);
 
  bytes.push(...encoder.encode("GARIS WAKTU\n"));
 
- // Normal lagi
  bytes.push(0x1D, 0x21, 0x00);
  bytes.push(0x1B, 0x45, 0x00);
 
- // ===== JARAK BIAR ELEGAN =====
  bytes.push(...encoder.encode("\n"));
-
- // Alamat (tetap center)
  bytes.push(...encoder.encode("JL A YANI KM 14,8 KEL GAMBUT\n"));
  bytes.push(...encoder.encode("KEC GAMBUT KAB BANJAR, 70652\n"));
 
- // Jarak lagi sebelum garis
  bytes.push(...encoder.encode("\n"));
  bytes.push(...encoder.encode("--------------------------------\n"));
 
- // Left align untuk isi
  bytes.push(0x1B, 0x61, 0x00);
 
  bytes.push(...encoder.encode("Tanggal : " + waktu + "\n"));
@@ -78,27 +82,25 @@ async function printStruk(trx){
  trx.items.forEach(i=>{
   bytes.push(...encoder.encode(i.name + "\n"));
   bytes.push(...encoder.encode(
-    i.qty + " x Rp " + i.price +
-    padLeft("Rp " + (i.price * i.qty), 18) + "\n"
+    i.qty + " x Rp " + formatRupiah(i.price) +
+    padLeft("Rp " + formatRupiah(i.price * i.qty), 18) + "\n"
   ));
  });
 
  bytes.push(...encoder.encode("--------------------------------\n"));
 
  bytes.push(...encoder.encode(
-   "TOTAL   : " + padLeft("Rp " + trx.total, 18) + "\n"
+   "TOTAL   : " + padLeft("Rp " + formatRupiah(trx.total), 18) + "\n"
  ));
  bytes.push(...encoder.encode(
-   "BAYAR   : " + padLeft("Rp " + trx.paid, 18) + "\n"
+   "BAYAR   : " + padLeft("Rp " + formatRupiah(trx.paid), 18) + "\n"
  ));
  bytes.push(...encoder.encode(
-   "KEMBALI : " + padLeft("Rp " + trx.change, 18) + "\n"
+   "KEMBALI : " + padLeft("Rp " + formatRupiah(trx.change), 18) + "\n"
  ));
 
- // ===== FOOTER =====
  bytes.push(...encoder.encode("\n"));
 
- // Center ucapan
  bytes.push(0x1B, 0x61, 0x01);
  bytes.push(...encoder.encode("Terima kasih sudah mampir\n"));
 
@@ -107,17 +109,17 @@ async function printStruk(trx){
  bytes.push(...encoder.encode("WhatsApp: 085147520182\n"));
  bytes.push(...encoder.encode("Instagram: @arayagamestation\n\n\n"));
 
- // Spasi bawah
  bytes.push(...encoder.encode("\n\n\n"));
- 
- await printerCharacteristic.writeValue(new Uint8Array(bytes));
-}
 
-////////////////////////////////////////////////////
-// HELPER
-////////////////////////////////////////////////////
+ try{
+  await writeInChunks(new Uint8Array(bytes));
+ }catch(e){
+  alert("Gagal print, coba ulangi");
+ }
+}
 
 function padLeft(text, width){
  text = text.toString();
- return " ".repeat(width - text.length) + text;
+ return " ".repeat(Math.max(0, width - text.length)) + text;
 }
+
