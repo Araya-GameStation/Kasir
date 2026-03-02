@@ -19,7 +19,7 @@ async function connectPrinter(){
 }
 
 ////////////////////////////////////////////////////
-// STRUK FINAL - HEADER LENGKAP + FOOTER KONTAK
+// STRUK GARIS WAKTU
 ////////////////////////////////////////////////////
 
 async function printStruk(trx){
@@ -40,10 +40,10 @@ async function printStruk(trx){
  const encoder = new TextEncoder();
  let bytes = [];
 
- // Spasi atas supaya tidak kepotong
- bytes.push(...encoder.encode("\n\n\n\n"));
+ // Spasi atas
+ bytes.push(...encoder.encode("\n\n\n"));
 
- // Center align
+ // Center
  bytes.push(0x1B, 0x61, 0x01);
 
  // Bold ON
@@ -54,17 +54,22 @@ async function printStruk(trx){
 
  bytes.push(...encoder.encode("GARIS WAKTU\n"));
 
- // Kembali normal
+ // Normal lagi
  bytes.push(0x1D, 0x21, 0x00);
  bytes.push(0x1B, 0x45, 0x00);
 
- // Alamat
+ // ===== JARAK BIAR ELEGAN =====
+ bytes.push(...encoder.encode("\n"));
+
+ // Alamat (tetap center)
  bytes.push(...encoder.encode("JL A YANI KM 14,8 KEL GAMBUT\n"));
  bytes.push(...encoder.encode("KEC GAMBUT KAB BANJAR, 70652\n"));
 
+ // Jarak lagi sebelum garis
+ bytes.push(...encoder.encode("\n"));
  bytes.push(...encoder.encode("--------------------------------\n"));
 
- // Left align
+ // Left align untuk isi
  bytes.push(0x1B, 0x61, 0x00);
 
  bytes.push(...encoder.encode("Tanggal : " + waktu + "\n"));
@@ -90,15 +95,17 @@ async function printStruk(trx){
    "KEMBALI : " + padLeft("Rp " + trx.change, 18) + "\n"
  ));
 
- // Footer
- bytes.push(...encoder.encode("\nTerima kasih sudah mampir\n"));
- bytes.push(...encoder.encode("--------------------------------\n"));
+ // ===== FOOTER =====
+ bytes.push(...encoder.encode("\n"));
 
- // Center kontak
+ // Center ucapan
  bytes.push(0x1B, 0x61, 0x01);
+ bytes.push(...encoder.encode("Terima kasih sudah mampir\n"));
+
+ bytes.push(...encoder.encode("\n--------------------------------\n\n"));
 
  bytes.push(...encoder.encode("WhatsApp: 085147520182\n"));
- bytes.push(...encoder.encode("Instagram: @arayagamestation\n\n\n\n"));
+ bytes.push(...encoder.encode("Instagram: @arayagamestation\n\n\n"));
 
  await printerCharacteristic.writeValue(new Uint8Array(bytes));
 }
