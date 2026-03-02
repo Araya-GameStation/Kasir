@@ -1,6 +1,6 @@
 
 // ============================================
-// GARIS WAKTU POS - FULL FEATURE VERSION
+// KASIR GARIS WAKTU
 // ============================================
 
 const app = document.getElementById("app");
@@ -65,7 +65,6 @@ function startRealtimeTransactions(){
     snap.forEach(doc=>{
       state.transactions.push({id:doc.id,...doc.data()});
     });
-    renderHistory();
   });
 }
 
@@ -171,10 +170,45 @@ function bayar(){
 // ================= RIWAYAT =================
 
 function renderHistory(){
+
+  const today = new Date();
+  today.setHours(0,0,0,0);
+
+  const todayTransactions = state.transactions.filter(t=>{
+    const d = new Date(t.date.seconds? t.date.seconds*1000 : t.date);
+    return d >= today;
+  });
+
+  const recap = {};
+  let totalIncome = 0;
+
+  todayTransactions.forEach(t=>{
+    totalIncome += t.total;
+    t.items.forEach(i=>{
+      if(!recap[i.name]){
+        recap[i.name] = { qty:0, total:0 };
+      }
+      recap[i.name].qty += i.qty;
+      recap[i.name].total += (i.price * i.qty);
+    });
+  });
+
   app.innerHTML=`
     <h2>Riwayat Transaksi</h2>
+
     <button onclick="toggleSelectAll()">Pilih Semua</button>
     <button onclick="deleteSelected()">Hapus Terpilih</button>
+    <button onclick="printDailyRecap()">Cetak Rekap Hari Ini</button>
+
+    <hr>
+
+    <h3>Rekap Hari Ini</h3>
+    ${Object.keys(recap).map(name=>`
+      ${name} - ${recap[name].qty} pcs - Rp ${recap[name].total}<br>
+    `).join("")}
+
+    <br><b>Total Pendapatan Hari Ini: Rp ${totalIncome}</b>
+
     <hr>
 
     ${state.transactions.map(t=>`
@@ -199,6 +233,10 @@ function renderHistory(){
 
     <button onclick="renderKasir()">Kembali</button>
   `;
+}
+
+function printDailyRecap(){
+  alert("Gunakan fitur printStruk untuk integrasi rekap printer jika diperlukan.");
 }
 
 function toggleDetail(id){
@@ -240,7 +278,7 @@ function deleteSelected(){
   state.selectedHistory.clear();
 }
 
-// ================= MENU MANAGER =================
+// ================= MENU =================
 
 function renderMenuManager(){
   app.innerHTML=`
