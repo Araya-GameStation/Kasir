@@ -86,7 +86,6 @@ async function printStruk(trx){
 
  bytes.push(...encoder.encode("--------------------------------\n"));
 
- // 1 BARIS TANGGAL + JAM (32 KARAKTER PRESISI)
  const left = tanggalLengkap;
  const right = jam;
  const spacing = 32 - left.length - right.length;
@@ -97,7 +96,6 @@ async function printStruk(trx){
 
  bytes.push(...encoder.encode("--------------------------------\n"));
 
- // ITEMS
  trx.items.forEach(i=>{
   bytes.push(...encoder.encode(i.name + "\n"));
   const qtyPrice = i.qty + " x " + formatRupiah(i.price);
@@ -109,7 +107,6 @@ async function printStruk(trx){
 
  bytes.push(...encoder.encode("--------------------------------\n"));
 
- // TOTAL BLOCK
  const totalLine = "TOTAL";
  const bayarLine = "BAYAR";
  const kembaliLine = "KEMBALI";
@@ -132,7 +129,6 @@ async function printStruk(trx){
 
  bytes.push(...encoder.encode("--------------------------------\n"));
 
- // THANK YOU CENTER
  bytes.push(0x1B, 0x61, 0x01);
  bytes.push(...encoder.encode("Terima Kasih\n"));
  bytes.push(...encoder.encode("Atas Kunjungan Anda\n"));
