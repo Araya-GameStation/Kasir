@@ -18,12 +18,8 @@ async function connectPrinter(){
  }
 }
 
-function textToBytes(text){
- return new TextEncoder().encode(text);
-}
-
 ////////////////////////////////////////////////////
-// STRUK PREMIUM RAPI
+// STRUK PREMIUM - HEADER BESAR & TIDAK KEPOTONG
 ////////////////////////////////////////////////////
 
 async function printStruk(trx){
@@ -32,7 +28,6 @@ async function printStruk(trx){
 
  const now = new Date();
 
- // WITA (Asia/Makassar)
  const waktu = now.toLocaleString("id-ID", {
   timeZone: "Asia/Makassar",
   day: "2-digit",
@@ -42,50 +37,63 @@ async function printStruk(trx){
   minute: "2-digit"
  });
 
- let s = "";
+ const encoder = new TextEncoder();
+ let bytes = [];
 
- // HEADER
- s += center("GARIS WAKTU") + "\n";
- s += center("JL A YANI KM 14,8 KEL GAMBUT") + "\n";
- s += center("KEC GAMBUT KAB BANJAR, 70652") + "\n";
- s += "--------------------------------\n";
+ // Spasi atas supaya tidak kepotong
+ bytes.push(...encoder.encode("\n\n\n\n"));
 
- // TANGGAL
- s += "Tanggal : " + waktu + "\n";
- s += "--------------------------------\n";
+ // Center align
+ bytes.push(0x1B, 0x61, 0x01);
 
- // ITEMS
+ // Bold ON
+ bytes.push(0x1B, 0x45, 0x01);
+
+ // Double width + double height
+ bytes.push(0x1D, 0x21, 0x11);
+
+ bytes.push(...encoder.encode("GARIS WAKTU\n"));
+
+ // Kembali normal
+ bytes.push(0x1D, 0x21, 0x00);
+ bytes.push(0x1B, 0x45, 0x00);
+
+ bytes.push(...encoder.encode("--------------------------------\n"));
+
+ // Left align
+ bytes.push(0x1B, 0x61, 0x00);
+
+ bytes.push(...encoder.encode("Tanggal : " + waktu + "\n"));
+ bytes.push(...encoder.encode("--------------------------------\n"));
+
  trx.items.forEach(i=>{
-  s += i.name + "\n";
-  s += i.qty + " x " + formatRupiah(i.price)
-       + padLeft(formatRupiah(i.price * i.qty), 18) + "\n";
+  bytes.push(...encoder.encode(i.name + "\n"));
+  bytes.push(...encoder.encode(
+    i.qty + " x Rp " + i.price +
+    padLeft("Rp " + (i.price * i.qty), 18) + "\n"
+  ));
  });
 
- s += "--------------------------------\n";
+ bytes.push(...encoder.encode("--------------------------------\n"));
 
- // TOTAL
- s += "TOTAL   : " + padLeft(formatRupiah(trx.total), 18) + "\n";
- s += "BAYAR   : " + padLeft(formatRupiah(trx.paid), 18) + "\n";
- s += "KEMBALI : " + padLeft(formatRupiah(trx.change), 18) + "\n";
+ bytes.push(...encoder.encode(
+   "TOTAL   : " + padLeft("Rp " + trx.total, 18) + "\n"
+ ));
+ bytes.push(...encoder.encode(
+   "BAYAR   : " + padLeft("Rp " + trx.paid, 18) + "\n"
+ ));
+ bytes.push(...encoder.encode(
+   "KEMBALI : " + padLeft("Rp " + trx.change, 18) + "\n"
+ ));
 
- s += "--------------------------------\n\n";
+ bytes.push(...encoder.encode("\nTerima kasih sudah mampir\n\n\n\n"));
 
- // FOOTER
- s += center(db.settings.footer || "Terima kasih sudah mampir") + "\n";
- s += center("IG: @arayagamestation") + "\n\n\n";
-
- await printerCharacteristic.writeValue(textToBytes(s));
+ await printerCharacteristic.writeValue(new Uint8Array(bytes));
 }
 
 ////////////////////////////////////////////////////
 // HELPER
 ////////////////////////////////////////////////////
-
-function center(text){
- const width = 32; // untuk printer 58mm
- const space = Math.floor((width - text.length) / 2);
- return " ".repeat(space > 0 ? space : 0) + text;
-}
 
 function padLeft(text, width){
  text = text.toString();
