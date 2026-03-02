@@ -12,7 +12,11 @@ function formatRupiah(num){
 
 function formatInputRupiah(input){
   let value = input.value.replace(/\D/g,"");
-  input.value = new Intl.NumberFormat("id-ID").format(value);
+  if(!value){
+    input.value = "";
+    return;
+  }
+  input.value = new Intl.NumberFormat("id-ID").format(parseInt(value));
 }
 
 // ================= STATE =================
@@ -122,10 +126,10 @@ function renderKasir(){
   state.currentView="kasir";
 
   const sortedCategories = [
-    ...state.categories.filter(c=>c.system),
     ...state.categories
       .filter(c=>!c.system)
-      .sort((a,b)=>a.name.localeCompare(b.name))
+      .sort((a,b)=>a.name.localeCompare(b.name)),
+    ...state.categories.filter(c=>c.system)
   ];
 
   const filteredMenus = (
@@ -296,7 +300,7 @@ async function bayar(){
     total: total,
     paid: paid,
     change: paid-total,
-    date: new Date()
+    date: firebase.firestore.FieldValue.serverTimestamp()
   };
 
   await dbCloud.collection("transactions").add(trx);
@@ -339,9 +343,16 @@ function renderHistory(){
 
   const sortedTransactions = [...state.transactions]
     .sort((a,b)=>{
-      const da = new Date(a.date.seconds ? a.date.seconds*1000 : a.date);
-      const db = new Date(b.date.seconds ? b.date.seconds*1000 : b.date);
-      return db - da;
+
+      const da = a.date?.seconds
+        ? a.date.seconds * 1000
+        : new Date(a.date).getTime();
+
+      const db = b.date?.seconds
+        ? b.date.seconds * 1000
+        : new Date(b.date).getTime();
+
+      return db - da; // terbaru di atas
     });
 
   app.innerHTML=`
@@ -440,10 +451,10 @@ function renderMenuManager(){
   state.currentView="menuManager";
 
   const sortedCategories = [
-    ...state.categories.filter(c=>c.system),
     ...state.categories
       .filter(c=>!c.system)
-      .sort((a,b)=>a.name.localeCompare(b.name))
+      .sort((a,b)=>a.name.localeCompare(b.name)),
+    ...state.categories.filter(c=>c.system)
   ];
 
   app.innerHTML=`
