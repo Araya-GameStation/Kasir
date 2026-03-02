@@ -1,6 +1,5 @@
-
 // ============================================
-// KASIR GARIS WAKTU
+// KASIR GARIS WAKTU - FINAL UPGRADE
 // ============================================
 
 const app = document.getElementById("app");
@@ -9,6 +8,9 @@ let state = {
   user: null,
   cart: [],
   menus: [],
+  categories: [],
+  selectedCategory: "ALL",
+  selectedMenus: new Set(),
   transactions: [],
   expandedHistory: null,
   selectedHistory: new Set()
@@ -21,6 +23,7 @@ firebase.auth().onAuthStateChanged(function(user){
   if(!user){
     renderLogin();
   }else{
+    startRealtimeCategories();
     startRealtimeMenus();
     startRealtimeTransactions();
     renderKasir();
@@ -49,6 +52,25 @@ function logout(){
 
 // ================= REALTIME =================
 
+function startRealtimeCategories(){
+  dbCloud.collection("categories").onSnapshot(async snap=>{
+    state.categories=[];
+    snap.forEach(doc=>{
+      state.categories.push({id:doc.id,...doc.data()});
+    });
+
+    // pastikan kategori "Lainnya" ada
+    if(!state.categories.find(c=>c.system)){
+      await dbCloud.collection("categories").add({
+        name:"Lainnya",
+        system:true
+      });
+    }
+
+    renderKasir();
+  });
+}
+
 function startRealtimeMenus(){
   dbCloud.collection("menus").onSnapshot(snap=>{
     state.menus=[];
@@ -71,6 +93,20 @@ function startRealtimeTransactions(){
 // ================= KASIR =================
 
 function renderKasir(){
+
+  const categoryNames = [
+    "ALL",
+    ...state.categories.map(c=>c.name)
+  ];
+
+  const filteredMenus =
+    state.selectedCategory === "ALL"
+    ? state.menus
+    : state.menus.filter(m=>{
+        const cat = state.categories.find(c=>c.id===m.categoryId);
+        return cat && cat.name === state.selectedCategory;
+      });
+
   app.innerHTML=`
     <h2>KASIR - GARIS WAKTU</h2>
 
@@ -83,18 +119,42 @@ function renderKasir(){
 
     <hr>
 
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;">
-      ${state.menus.map(m=>`
-        <div style="border:1px solid #ccc;padding:10px;cursor:pointer"
-          onclick="addToCart('${m.id}')">
-          <b>${m.name}</b><br>
-          Rp ${m.price}
-        </div>
+    <div style="margin-bottom:10px;">
+      ${categoryNames.map(c=>`
+        <button 
+          onclick="selectCategory('${c}')"
+          style="margin-right:5px;
+          ${state.selectedCategory===c?'background:#6366f1;color:white;':''}">
+          ${c}
+        </button>
       `).join("")}
     </div>
 
     <hr>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;">
+      ${filteredMenus.map(m=>{
+        const disabled = m.useStock && m.stock<=0;
+        return `
+          <div 
+            style="border:1px solid #ccc;padding:10px;
+              opacity:${disabled?0.5:1};
+              pointer-events:${disabled?'none':'auto'};
+              cursor:pointer"
+            onclick="addToCart('${m.id}')">
+            <b>${m.name}</b><br>
+            Rp ${m.price}<br>
+            ${m.useStock?`Sisa: ${m.stock}`:''}
+            ${disabled?'<br><span style="color:red">Stok Habis</span>':''}
+          </div>
+        `;
+      }).join("")}
+    </div>
+
+    <hr>
+
     <h3>Keranjang</h3>
+
     ${state.cart.map(i=>`
       ${i.name} x${i.qty} - Rp ${i.price*i.qty}
       <button onclick="changeQty('${i.id}',-1)">-</button>
@@ -115,21 +175,43 @@ function renderKasir(){
   `;
 }
 
+function selectCategory(c){
+  state.selectedCategory = c;
+  renderKasir();
+}
+
 function addToCart(id){
   const item = state.menus.find(m=>m.id===id);
+  if(!item) return;
+
+  if(item.useStock && item.stock<=0) return;
+
   const exist = state.cart.find(c=>c.id===id);
-  if(exist) exist.qty++;
-  else state.cart.push({...item,qty:1});
+
+  if(exist){
+    if(item.useStock && exist.qty>=item.stock) return;
+    exist.qty++;
+  }else{
+    state.cart.push({...item,qty:1});
+  }
+
   renderKasir();
 }
 
 function changeQty(id,d){
   const item = state.cart.find(i=>i.id===id);
   if(!item) return;
+
+  const menu = state.menus.find(m=>m.id===id);
+
+  if(menu.useStock && (item.qty+d)>menu.stock) return;
+
   item.qty+=d;
+
   if(item.qty<=0){
     state.cart=state.cart.filter(i=>i.id!==id);
   }
+
   renderKasir();
 }
 
@@ -141,12 +223,36 @@ function setPay(v){
   document.getElementById("payInput").value=v;
 }
 
-function bayar(){
+// ================= BAYAR =================
+
+async function bayar(){
+
   const paid=parseInt(document.getElementById("payInput").value);
   const total=getTotal();
+
   if(!paid || paid<total){
     alert("Uang kurang");
     return;
+  }
+
+  // update stok pakai transaction (anti minus)
+  for(const item of state.cart){
+
+    const menuRef = dbCloud.collection("menus").doc(item.id);
+
+    await dbCloud.runTransaction(async (transaction)=>{
+      const doc = await transaction.get(menuRef);
+      const data = doc.data();
+
+      if(data.useStock){
+        if(data.stock < item.qty){
+          throw "Stok tidak cukup";
+        }
+        transaction.update(menuRef,{
+          stock:data.stock - item.qty
+        });
+      }
+    });
   }
 
   const trx = {
@@ -157,7 +263,7 @@ function bayar(){
     date: new Date()
   };
 
-  dbCloud.collection("transactions").add(trx);
+  await dbCloud.collection("transactions").add(trx);
 
   if(typeof printStruk === "function"){
     printStruk(trx);
@@ -198,7 +304,6 @@ function renderHistory(){
 
     <button onclick="toggleSelectAll()">Pilih Semua</button>
     <button onclick="deleteSelected()">Hapus Terpilih</button>
-    <button onclick="printDailyRecap()">Cetak Rekap Hari Ini</button>
 
     <hr>
 
@@ -233,10 +338,6 @@ function renderHistory(){
 
     <button onclick="renderKasir()">Kembali</button>
   `;
-}
-
-function printDailyRecap(){
-  alert("Gunakan fitur printStruk untuk integrasi rekap printer jika diperlukan.");
 }
 
 function toggleDetail(id){
@@ -278,36 +379,144 @@ function deleteSelected(){
   state.selectedHistory.clear();
 }
 
-// ================= MENU =================
+// ================= MENU MANAGER =================
 
 function renderMenuManager(){
+
   app.innerHTML=`
-    <h2>Kelola Menu</h2>
-    <input id="menuName" placeholder="Nama Menu">
-    <input id="menuPrice" type="number" placeholder="Harga">
-    <button onclick="addMenu()">Tambah</button>
+    <h2>Kelola Kategori</h2>
+
+    <input id="newCategory" placeholder="Nama Kategori">
+    <button onclick="addCategory()">Tambah</button>
+
     <hr>
-    ${state.menus.map(m=>`
-      ${m.name} - Rp ${m.price}
-      <button onclick="deleteMenu('${m.id}')">Hapus</button><br>
+
+    ${state.categories.map(c=>`
+      ${c.name}
+      ${!c.system?`<button onclick="deleteCategory('${c.id}')">Hapus</button>`:''}
+      <button onclick="openCategory('${c.id}')">Buka</button>
+      <br>
     `).join("")}
+
     <hr>
     <button onclick="renderKasir()">Kembali</button>
   `;
 }
 
-function addMenu(){
+function addCategory(){
+  const name=document.getElementById("newCategory").value;
+  if(!name) return;
+
+  dbCloud.collection("categories").add({
+    name:name,
+    system:false
+  });
+}
+
+async function deleteCategory(id){
+
+  if(!confirm("Yakin hapus kategori? Semua menu akan dipindahkan ke Lainnya.")){
+    return;
+  }
+
+  const lainnya = state.categories.find(c=>c.system);
+  const menusToMove = state.menus.filter(m=>m.categoryId===id);
+
+  for(const m of menusToMove){
+    await dbCloud.collection("menus").doc(m.id).update({
+      categoryId:lainnya.id
+    });
+  }
+
+  await dbCloud.collection("categories").doc(id).delete();
+}
+
+function openCategory(id){
+
+  const category = state.categories.find(c=>c.id===id);
+  const menus = state.menus.filter(m=>m.categoryId===id);
+
+  app.innerHTML=`
+    <h2>Kategori: ${category.name}</h2>
+
+    <input id="menuName" placeholder="Nama Menu">
+    <input id="menuPrice" type="number" placeholder="Harga">
+    <label><input type="checkbox" id="useStock"> Gunakan Stok</label>
+    <input id="stock" type="number" placeholder="Jumlah Stok">
+    <button onclick="addMenu('${id}')">Tambah Menu</button>
+
+    <hr>
+
+    <button onclick="toggleSelectAllMenu('${id}')">Pilih Semua</button>
+    <button onclick="deleteSelectedMenus('${id}')">Hapus Terpilih</button>
+
+    <hr>
+
+    ${menus.map(m=>`
+      <input type="checkbox"
+        ${state.selectedMenus.has(m.id)?'checked':''}
+        onchange="toggleSelectMenu('${m.id}')">
+      ${m.name} - Rp ${m.price}
+      ${m.useStock?`(Stok: ${m.stock})`:''}
+      <br>
+    `).join("")}
+
+    <hr>
+    <button onclick="renderMenuManager()">Kembali</button>
+  `;
+}
+
+function addMenu(categoryId){
+
   const name=document.getElementById("menuName").value;
   const price=parseInt(document.getElementById("menuPrice").value);
+  const useStock=document.getElementById("useStock").checked;
+  const stock=parseInt(document.getElementById("stock").value)||0;
+
   if(!name||!price) return;
 
   dbCloud.collection("menus").add({
     name:name,
     price:price,
+    categoryId:categoryId,
+    useStock:useStock,
+    stock:useStock?stock:0,
     active:true
   });
 }
 
-function deleteMenu(id){
-  dbCloud.collection("menus").doc(id).delete();
+function toggleSelectMenu(id){
+  if(state.selectedMenus.has(id))
+    state.selectedMenus.delete(id);
+  else
+    state.selectedMenus.add(id);
+}
+
+function toggleSelectAllMenu(categoryId){
+  const menus = state.menus.filter(m=>m.categoryId===categoryId);
+
+  if(state.selectedMenus.size===menus.length){
+    state.selectedMenus.clear();
+  }else{
+    menus.forEach(m=>state.selectedMenus.add(m.id));
+  }
+
+  openCategory(categoryId);
+}
+
+async function deleteSelectedMenus(categoryId){
+
+  if(state.selectedMenus.size===0){
+    alert("Tidak ada yang dipilih");
+    return;
+  }
+
+  if(!confirm("Yakin hapus menu terpilih?")) return;
+
+  for(const id of state.selectedMenus){
+    await dbCloud.collection("menus").doc(id).delete();
+  }
+
+  state.selectedMenus.clear();
+  openCategory(categoryId);
 }
