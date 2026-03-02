@@ -1,3 +1,4 @@
+
 // ============================================
 // KASIR GARIS WAKTU
 // ============================================
@@ -13,7 +14,9 @@ let state = {
   selectedMenus: new Set(),
   transactions: [],
   expandedHistory: null,
-  selectedHistory: new Set()
+  selectedHistory: new Set(),
+  currentView: "kasir",
+  currentCategoryId: null
 };
 
 // ================= AUTH =================
@@ -50,6 +53,16 @@ function logout(){
   firebase.auth().signOut();
 }
 
+// ================= SAFE RENDER =================
+
+function safeRender(){
+  if(state.currentView === "kasir") renderKasir();
+  else if(state.currentView === "history") renderHistory();
+  else if(state.currentView === "menuManager") renderMenuManager();
+  else if(state.currentView === "openCategory")
+    openCategory(state.currentCategoryId);
+}
+
 // ================= REALTIME =================
 
 function startRealtimeCategories(){
@@ -66,7 +79,7 @@ function startRealtimeCategories(){
       });
     }
 
-    renderKasir();
+    safeRender();
   });
 }
 
@@ -76,7 +89,7 @@ function startRealtimeMenus(){
     snap.forEach(doc=>{
       state.menus.push({id:doc.id,...doc.data()});
     });
-    renderKasir();
+    safeRender();
   });
 }
 
@@ -86,12 +99,15 @@ function startRealtimeTransactions(){
     snap.forEach(doc=>{
       state.transactions.push({id:doc.id,...doc.data()});
     });
+    if(state.currentView==="history") renderHistory();
   });
 }
 
 // ================= KASIR =================
 
 function renderKasir(){
+
+  state.currentView="kasir";
 
   const categoryNames = [
     "ALL",
@@ -170,7 +186,7 @@ function renderKasir(){
     <button onclick="setPay(getTotal())">Uang Pas</button><br><br>
 
     <input id="payInput" type="number" placeholder="Bayar"><br><br>
-    <button onclick="bayar()">Bayar</button>
+    <button id="btnBayar" onclick="bayar()">Bayar</button>
   `;
 }
 
@@ -226,11 +242,17 @@ function setPay(v){
 
 async function bayar(){
 
+  const btn = document.getElementById("btnBayar");
+  btn.disabled=true;
+  btn.innerText="Memproses...";
+
   const paid=parseInt(document.getElementById("payInput").value);
   const total=getTotal();
 
   if(!paid || paid<total){
     alert("Uang kurang");
+    btn.disabled=false;
+    btn.innerText="Bayar";
     return;
   }
 
@@ -275,6 +297,8 @@ async function bayar(){
 
 function renderHistory(){
 
+  state.currentView="history";
+
   const today = new Date();
   today.setHours(0,0,0,0);
 
@@ -301,7 +325,7 @@ function renderHistory(){
     <h2>Riwayat Transaksi</h2>
 
     <button onclick="toggleSelectAll()">Pilih Semua</button>
-    <button onclick="deleteSelected()">Hapus Terpilih</button>
+    <button id="btnHapusTrx" onclick="deleteSelected()">Hapus Terpilih</button>
 
     <hr>
 
@@ -360,7 +384,7 @@ function toggleSelectAll(){
   renderHistory();
 }
 
-function deleteSelected(){
+async function deleteSelected(){
   if(state.selectedHistory.size===0){
     alert("Tidak ada yang dipilih");
     return;
@@ -370,16 +394,25 @@ function deleteSelected(){
     return;
   }
 
-  state.selectedHistory.forEach(id=>{
-    dbCloud.collection("transactions").doc(id).delete();
-  });
+  const btn=document.getElementById("btnHapusTrx");
+  btn.disabled=true;
+  btn.innerText="Menghapus...";
+
+  const ids=[...state.selectedHistory];
+
+  await Promise.all(
+    ids.map(id=>dbCloud.collection("transactions").doc(id).delete())
+  );
 
   state.selectedHistory.clear();
+  renderHistory();
 }
 
 // ================= MENU MANAGER =================
 
 function renderMenuManager(){
+
+  state.currentView="menuManager";
 
   app.innerHTML=`
     <h2>Kelola Kategori</h2>
@@ -431,6 +464,9 @@ async function deleteCategory(id){
 
 function openCategory(id){
 
+  state.currentView="openCategory";
+  state.currentCategoryId=id;
+
   const category = state.categories.find(c=>c.id===id);
   const menus = state.menus.filter(m=>m.categoryId===id);
 
@@ -446,7 +482,7 @@ function openCategory(id){
     <hr>
 
     <button onclick="toggleSelectAllMenu('${id}')">Pilih Semua</button>
-    <button onclick="deleteSelectedMenus('${id}')">Hapus Terpilih</button>
+    <button id="btnHapusMenu" onclick="deleteSelectedMenus('${id}')">Hapus Terpilih</button>
 
     <hr>
 
@@ -511,10 +547,17 @@ async function deleteSelectedMenus(categoryId){
 
   if(!confirm("Yakin hapus menu terpilih?")) return;
 
-  for(const id of state.selectedMenus){
-    await dbCloud.collection("menus").doc(id).delete();
-  }
+  const btn=document.getElementById("btnHapusMenu");
+  btn.disabled=true;
+  btn.innerText="Menghapus...";
+
+  const ids=[...state.selectedMenus];
+
+  await Promise.all(
+    ids.map(id=>dbCloud.collection("menus").doc(id).delete())
+  );
 
   state.selectedMenus.clear();
   openCategory(categoryId);
 }
+
