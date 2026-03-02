@@ -52,17 +52,19 @@ async function printStruk(trx){
 
  const now = new Date();
 
- const tanggal = now.toLocaleDateString("id-ID", {
-  timeZone: "Asia/Makassar",
+ const tanggalLengkap = now.toLocaleDateString("id-ID", {
+  weekday: "long",
   day: "2-digit",
-  month: "2-digit",
-  year: "numeric"
+  month: "long",
+  year: "numeric",
+  timeZone: "Asia/Makassar"
  });
 
  const jam = now.toLocaleTimeString("id-ID", {
-  timeZone: "Asia/Makassar",
   hour: "2-digit",
-  minute: "2-digit"
+  minute: "2-digit",
+  hour12: false,
+  timeZone: "Asia/Makassar"
  });
 
  const encoder = new TextEncoder();
@@ -70,61 +72,67 @@ async function printStruk(trx){
 
  bytes.push(...encoder.encode("\n\n"));
 
- // CENTER + BOLD + DOUBLE SIZE
  bytes.push(0x1B, 0x61, 0x01);
  bytes.push(0x1B, 0x45, 0x01);
  bytes.push(0x1D, 0x21, 0x11);
-
  bytes.push(...encoder.encode("GARIS WAKTU\n"));
 
- // NORMAL SIZE
  bytes.push(0x1D, 0x21, 0x00);
  bytes.push(0x1B, 0x45, 0x00);
 
+ bytes.push(...encoder.encode("\n"));
  bytes.push(...encoder.encode("JL A YANI KM 14,8 KEL GAMBUT\n"));
  bytes.push(...encoder.encode("KEC GAMBUT KAB BANJAR 70652\n"));
 
  bytes.push(...encoder.encode("--------------------------------\n"));
 
- // CENTER DATE
- bytes.push(0x1B, 0x61, 0x01);
- bytes.push(...encoder.encode(tanggal + " • " + jam + "\n"));
+ // 1 BARIS TANGGAL + JAM (32 KARAKTER PRESISI)
+ const left = tanggalLengkap;
+ const right = jam;
+ const spacing = 32 - left.length - right.length;
+ const dateLine = left + " ".repeat(Math.max(0, spacing)) + right;
+
+ bytes.push(0x1B, 0x61, 0x00);
+ bytes.push(...encoder.encode(dateLine + "\n"));
 
  bytes.push(...encoder.encode("--------------------------------\n"));
 
- // LEFT ALIGN ITEMS
- bytes.push(0x1B, 0x61, 0x00);
-
+ // ITEMS
  trx.items.forEach(i=>{
   bytes.push(...encoder.encode(i.name + "\n"));
   const qtyPrice = i.qty + " x " + formatRupiah(i.price);
   const totalPrice = formatRupiah(i.price * i.qty);
-  bytes.push(...encoder.encode(
-    qtyPrice + padLeft(totalPrice, 32 - qtyPrice.length) + "\n"
-  ));
+  const itemSpacing = 32 - qtyPrice.length - totalPrice.length;
+  const itemLine = qtyPrice + " ".repeat(Math.max(0, itemSpacing)) + totalPrice;
+  bytes.push(...encoder.encode(itemLine + "\n"));
  });
 
  bytes.push(...encoder.encode("--------------------------------\n"));
 
+ // TOTAL BLOCK
  const totalLine = "TOTAL";
  const bayarLine = "BAYAR";
  const kembaliLine = "KEMBALI";
 
+ const totalSpacing = 32 - totalLine.length - formatRupiah(trx.total).length;
+ const bayarSpacing = 32 - bayarLine.length - formatRupiah(trx.paid).length;
+ const kembaliSpacing = 32 - kembaliLine.length - formatRupiah(trx.change).length;
+
  bytes.push(...encoder.encode(
-  totalLine + padLeft(formatRupiah(trx.total), 32 - totalLine.length) + "\n"
+  totalLine + " ".repeat(Math.max(0, totalSpacing)) + formatRupiah(trx.total) + "\n"
  ));
 
  bytes.push(...encoder.encode(
-  bayarLine + padLeft(formatRupiah(trx.paid), 32 - bayarLine.length) + "\n"
+  bayarLine + " ".repeat(Math.max(0, bayarSpacing)) + formatRupiah(trx.paid) + "\n"
  ));
 
  bytes.push(...encoder.encode(
-  kembaliLine + padLeft(formatRupiah(trx.change), 32 - kembaliLine.length) + "\n"
+  kembaliLine + " ".repeat(Math.max(0, kembaliSpacing)) + formatRupiah(trx.change) + "\n"
  ));
 
  bytes.push(...encoder.encode("--------------------------------\n"));
 
- // CENTER THANK YOU
+ // THANK YOU CENTER
  bytes.push(0x1B, 0x61, 0x01);
  bytes.push(...encoder.encode("Terima Kasih\n"));
  bytes.push(...encoder.encode("Atas Kunjungan Anda\n"));
@@ -137,9 +145,4 @@ async function printStruk(trx){
  bytes.push(...encoder.encode("\n\n\n"));
 
  await writeInChunks(new Uint8Array(bytes));
-}
-
-function padLeft(text, width){
- text = text.toString();
- return " ".repeat(Math.max(0, width - text.length)) + text;
 }
