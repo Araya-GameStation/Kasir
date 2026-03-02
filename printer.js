@@ -22,10 +22,6 @@ async function connectPrinter(){
  }
 }
 
-////////////////////////////////////////////////////
-// CEPAT TAPI AMAN
-////////////////////////////////////////////////////
-
 async function writeInChunks(data){
 
   const chunkSize = 100;
@@ -45,10 +41,6 @@ async function writeInChunks(data){
   }
 }
 
-////////////////////////////////////////////////////
-// PRINT STRUK
-////////////////////////////////////////////////////
-
 async function printStruk(trx){
 
  if(!printerDevice || !printerDevice.gatt.connected){
@@ -60,11 +52,15 @@ async function printStruk(trx){
 
  const now = new Date();
 
- const waktu = now.toLocaleString("id-ID", {
+ const tanggal = now.toLocaleDateString("id-ID", {
   timeZone: "Asia/Makassar",
   day: "2-digit",
   month: "2-digit",
-  year: "numeric",
+  year: "numeric"
+ });
+
+ const jam = now.toLocaleTimeString("id-ID", {
+  timeZone: "Asia/Makassar",
   hour: "2-digit",
   minute: "2-digit"
  });
@@ -72,56 +68,71 @@ async function printStruk(trx){
  const encoder = new TextEncoder();
  let bytes = [];
 
- bytes.push(...encoder.encode("\n\n\n"));
+ bytes.push(...encoder.encode("\n\n"));
 
+ // CENTER + BOLD + DOUBLE SIZE
  bytes.push(0x1B, 0x61, 0x01);
  bytes.push(0x1B, 0x45, 0x01);
  bytes.push(0x1D, 0x21, 0x11);
 
  bytes.push(...encoder.encode("GARIS WAKTU\n"));
 
+ // NORMAL SIZE
  bytes.push(0x1D, 0x21, 0x00);
  bytes.push(0x1B, 0x45, 0x00);
 
- bytes.push(...encoder.encode("\n"));
  bytes.push(...encoder.encode("JL A YANI KM 14,8 KEL GAMBUT\n"));
- bytes.push(...encoder.encode("KEC GAMBUT KAB BANJAR, 70652\n"));
+ bytes.push(...encoder.encode("KEC GAMBUT KAB BANJAR 70652\n"));
 
  bytes.push(...encoder.encode("--------------------------------\n"));
 
+ // CENTER DATE
+ bytes.push(0x1B, 0x61, 0x01);
+ bytes.push(...encoder.encode(tanggal + " • " + jam + "\n"));
+
+ bytes.push(...encoder.encode("--------------------------------\n"));
+
+ // LEFT ALIGN ITEMS
  bytes.push(0x1B, 0x61, 0x00);
-
- bytes.push(...encoder.encode("Tanggal : " + waktu + "\n"));
- bytes.push(...encoder.encode("--------------------------------\n"));
 
  trx.items.forEach(i=>{
   bytes.push(...encoder.encode(i.name + "\n"));
+  const qtyPrice = i.qty + " x " + formatRupiah(i.price);
+  const totalPrice = formatRupiah(i.price * i.qty);
   bytes.push(...encoder.encode(
-    i.qty + " x Rp " + formatRupiah(i.price) +
-    padLeft("Rp " + formatRupiah(i.price * i.qty), 18) + "\n"
+    qtyPrice + padLeft(totalPrice, 32 - qtyPrice.length) + "\n"
   ));
  });
 
  bytes.push(...encoder.encode("--------------------------------\n"));
 
+ const totalLine = "TOTAL";
+ const bayarLine = "BAYAR";
+ const kembaliLine = "KEMBALI";
+
  bytes.push(...encoder.encode(
-   "TOTAL   : " + padLeft("Rp " + formatRupiah(trx.total), 18) + "\n"
- ));
- bytes.push(...encoder.encode(
-   "BAYAR   : " + padLeft("Rp " + formatRupiah(trx.paid), 18) + "\n"
- ));
- bytes.push(...encoder.encode(
-   "KEMBALI : " + padLeft("Rp " + formatRupiah(trx.change), 18) + "\n"
+  totalLine + padLeft(formatRupiah(trx.total), 32 - totalLine.length) + "\n"
  ));
 
- bytes.push(...encoder.encode("\n"));
+ bytes.push(...encoder.encode(
+  bayarLine + padLeft(formatRupiah(trx.paid), 32 - bayarLine.length) + "\n"
+ ));
 
- bytes.push(0x1B, 0x61, 0x01);
- bytes.push(...encoder.encode("Terima kasih sudah mampir\n"));
+ bytes.push(...encoder.encode(
+  kembaliLine + padLeft(formatRupiah(trx.change), 32 - kembaliLine.length) + "\n"
+ ));
 
  bytes.push(...encoder.encode("--------------------------------\n"));
- bytes.push(...encoder.encode("WhatsApp: 085147520182\n"));
- bytes.push(...encoder.encode("Instagram: @arayagamestation\n\n\n"));
+
+ // CENTER THANK YOU
+ bytes.push(0x1B, 0x61, 0x01);
+ bytes.push(...encoder.encode("Terima Kasih\n"));
+ bytes.push(...encoder.encode("Atas Kunjungan Anda\n"));
+
+ bytes.push(...encoder.encode("--------------------------------\n"));
+
+ bytes.push(...encoder.encode("WA  : 085147520182\n"));
+ bytes.push(...encoder.encode("IG  : @arayagamestation\n"));
 
  bytes.push(...encoder.encode("\n\n\n"));
 
