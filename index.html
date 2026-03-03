@@ -1,45 +1,35 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-  <title>KASIR GARIS WAKTU - Premium</title>
-  
-  <!-- Font Awesome Icons 6 (free) -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-  
-  <!-- Google Fonts - Inter Premium -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  
-  <!-- CSS Premium -->
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KASIR GARIS WAKTU</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="app"></div>
+<div id="app"></div>
 
-  <!-- Printer JS -->
-  <script src="printer.js"></script>
+<script src="printer.js"></script>
 
-  <!-- Firebase Compat -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<!-- FIREBASE COMPAT VERSION -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyBkb9M6RGsZSDSsZPnTn_NpWDZFrdL3dMY",
-      authDomain: "garis-waktu-pos.firebaseapp.com",
-      projectId: "garis-waktu-pos",
-      storageBucket: "garis-waktu-pos.appspot.com",
-      messagingSenderId: "113767699030",
-      appId: "1:113767699030:web:6432c16dd4afd0218121f7"
-    };
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyBkb9M6RGsZSDSsZPnTn_NpWDZFrdL3dMY",
+    authDomain: "garis-waktu-pos.firebaseapp.com",
+    projectId: "garis-waktu-pos",
+    storageBucket: "garis-waktu-pos.appspot.com",
+    messagingSenderId: "113767699030",
+    appId: "1:113767699030:web:6432c16dd4afd0218121f7"
+  };
 
-    firebase.initializeApp(firebaseConfig);
-    window.dbCloud = firebase.firestore();
-  </script>
+  firebase.initializeApp(firebaseConfig);
+  window.dbCloud = firebase.firestore();
+</script>
 
-  <!-- Logic APP.JS (TETAP ORIGINAL) -->
-  <script src="app.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
