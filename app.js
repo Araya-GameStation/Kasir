@@ -49,7 +49,9 @@ function renderLogin(){
   app.innerHTML = `
     <div class="login-screen">
       <div class="login-card">
-        <div style="font-size: 40px; margin-bottom: 10px;">⏱️</div>
+        <div style="margin-bottom: 20px;">
+        <img src="logo.png" alt="Logo" style="width: 80px; height: 80px; object-fit: contain;">
+        </div>
         <h2 style="margin-bottom: 5px;">Garis Waktu POS</h2>
         <p style="color: var(--text-muted); margin-bottom: 30px;">Silakan login untuk mengakses kasir</p>
         
