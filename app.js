@@ -45,27 +45,28 @@ firebase.auth().onAuthStateChanged(function(user){
   }
 });
 
-function renderLogin(){
+function renderLogin() {
   app.innerHTML = `
     <div class="login-screen">
       <div class="login-card">
-        <div style="margin-bottom: 20px;">
-        <img src="logo.png" alt="Logo" style="width: 80px; height: 80px; object-fit: contain;">
-        </div>
-        <h2 style="margin-bottom: 5px;">Garis Waktu POS</h2>
-        <p style="color: var(--text-muted); margin-bottom: 30px;">Silakan login untuk mengakses kasir</p>
+        <span class="brand-title">Garis Waktu</span>
+        <p class="brand-subtitle">Sistem Manajemen Point of Sale</p>
         
-        <div class="input-group" style="text-align: left; margin-bottom: 15px;">
-          <label style="font-size: 12px; font-weight: bold; color: var(--text-muted);">EMAIL</label>
-          <input id="email" type="text" placeholder="admin@gariswaktu.com">
+        <div class="input-group">
+          <input id="email" type="email" class="login-input" placeholder="Alamat Email">
         </div>
         
-        <div class="input-group" style="text-align: left; margin-bottom: 30px;">
-          <label style="font-size: 12px; font-weight: bold; color: var(--text-muted);">PASSWORD</label>
-          <input id="password" type="password" placeholder="••••••••">
+        <div class="input-group">
+          <input id="password" type="password" class="login-input" placeholder="Kata Sandi">
         </div>
         
-        <button class="btn-bayar" onclick="login()">MASUK KE SISTEM</button>
+        <button class="btn-login-premium" onclick="login()">
+          Masuk Sekarang
+        </button>
+        
+        <p style="margin-top: 30px; font-size: 12px; color: #cbd5e1; letter-spacing: 1px;">
+          VERSI 2.0.4
+        </p>
       </div>
     </div>
   `;
@@ -75,7 +76,7 @@ function login(){
   const email = document.getElementById("email").value;
   const pass = document.getElementById("password").value;
   firebase.auth().signInWithEmailAndPassword(email,pass)
-    .catch(e=>alert(e.message));
+    .catch(e=>showToast(e.message));
 }
 
 function logout(){
@@ -156,20 +157,23 @@ function renderKasir(){
   app.innerHTML = `
     <div class="pos-container">
       <aside class="sidebar">
-        <div class="nav-item active" onclick="renderKasir()">
+        <div class="nav-item ${state.currentView==='kasir'?'active':''}" onclick="renderKasir()">
           <i>🏠</i><span>Kasir</span>
         </div>
-        <div class="nav-item" onclick="renderHistory()">
+        <div class="nav-item ${state.currentView==='history'?'active':''}" onclick="renderHistory()">
           <i>📋</i><span>Riwayat</span>
         </div>
-        <div class="nav-item" onclick="renderMenuManager()">
+        <div class="nav-item ${state.currentView==='menuManager' || state.currentView==='openCategory'?'active':''}" onclick="renderMenuManager()">
           <i>⚙️</i><span>Kelola</span>
         </div>
-        <div class="nav-item" style="margin-top:auto" onclick="connectPrinter()">
-          <i>🖨️</i><span>Printer</span>
-        </div>
-        <div class="nav-item" onclick="logout()">
-          <i>🚪</i><span>Keluar</span>
+        
+        <div style="margin-top: auto; width: 100%;">
+          <div class="nav-item" onclick="connectPrinter()" style="margin-bottom: 20px;">
+            <i>🖨️</i><span>Printer</span>
+          </div>
+          <div class="nav-item logout" onclick="logout()">
+            <i>🚪</i><span>Keluar</span>
+          </div>
         </div>
       </aside>
 
@@ -305,7 +309,7 @@ async function bayar(){
   const total=getTotal();
 
   if(!paid || paid<total){
-    alert("Uang kurang");
+    showToast("Uang kurang");
     btn.disabled=false;
     btn.innerText="Bayar";
     return;
@@ -378,10 +382,24 @@ function renderHistory(){
   app.innerHTML = `
     <div class="pos-container">
       <aside class="sidebar">
-        <div class="nav-item" onclick="renderKasir()"><i>🏠</i><span>Kasir</span></div>
-        <div class="nav-item active" onclick="renderHistory()"><i>📋</i><span>Riwayat</span></div>
-        <div class="nav-item" onclick="renderMenuManager()"><i>⚙️</i><span>Kelola</span></div>
-        <div class="nav-item" style="margin-top:auto" onclick="logout()"><i>🚪</i><span>Keluar</span></div>
+        <div class="nav-item ${state.currentView==='kasir'?'active':''}" onclick="renderKasir()">
+          <i>🏠</i><span>Kasir</span>
+        </div>
+        <div class="nav-item ${state.currentView==='history'?'active':''}" onclick="renderHistory()">
+          <i>📋</i><span>Riwayat</span>
+        </div>
+        <div class="nav-item ${state.currentView==='menuManager' || state.currentView==='openCategory'?'active':''}" onclick="renderMenuManager()">
+          <i>⚙️</i><span>Kelola</span>
+        </div>
+        
+        <div style="margin-top: auto; width: 100%;">
+          <div class="nav-item" onclick="connectPrinter()" style="margin-bottom: 20px;">
+            <i>🖨️</i><span>Printer</span>
+          </div>
+          <div class="nav-item logout" onclick="logout()">
+            <i>🚪</i><span>Keluar</span>
+          </div>
+        </div>
       </aside>
 
       <main class="main-content" style="padding:20px; display:flex; flex-direction:column; height:100vh; box-sizing:border-box;">
@@ -423,21 +441,51 @@ function renderHistory(){
             const db = new Date(b.date.seconds? b.date.seconds*1000 : b.date);
             return db - da;
           }).map(t=>`
-            <div class="card-menu" style="text-align:left; margin-bottom:10px; display:block; padding:15px; width:auto;">
+            <div class="card-menu" style="text-align:left; margin-bottom:12px; display:block; padding:18px; width:auto; border:1px solid #f1f5f9;">
               <div style="display:flex; justify-content:space-between; align-items:center;">
-                <div style="display:flex; align-items:center; gap:12px;">
+                <div style="display:flex; align-items:center; gap:15px;">
                   <input type="checkbox" style="width:18px; height:18px;" ${state.selectedHistory.has(t.id)?'checked':''} onchange="toggleSelect('${t.id}')">
                   <div>
-                    <div style="font-weight:bold;">${new Date(t.date.seconds? t.date.seconds*1000 : t.date).toLocaleString('id-ID')}</div>
+                    <div style="font-weight:bold; font-size:15px;">${new Date(t.date.seconds? t.date.seconds*1000 : t.date).toLocaleString('id-ID')}</div>
                     <small style="color:var(--text-muted)">ID: ${t.id.substring(0,8)}</small>
                   </div>
                 </div>
                 <div style="text-align:right">
-                  <div style="color:var(--accent); font-weight:bold;">Rp ${formatRupiah(t.total)}</div>
-                  <button class="category-btn" style="margin-top:5px; font-size:10px; padding:2px 8px;" onclick="toggleDetail('${t.id}')">DETAIL</button>
+                  <div style="color:var(--accent); font-weight:bold; font-size:16px;">Rp ${formatRupiah(t.total)}</div>
+                  <div style="display:flex; gap:8px; margin-top:8px; justify-content:flex-end;">
+                    <button class="category-btn" style="font-size:10px; padding:4px 10px; border-color:#e2e8f0;" onclick="reprintReceipt('${t.id}')">🖨️ CETAK</button>
+                    <button class="category-btn" style="font-size:10px; padding:4px 10px;" onclick="toggleDetail('${t.id}')">
+                      ${state.expandedHistory === t.id ? 'TUTUP' : 'DETAIL'}
+                    </button>
+                  </div>
                 </div>
               </div>
-              ${state.expandedHistory===t.id ? `<div style="margin-top:10px; padding:10px; background:#f8fafc; border-radius:8px; border:1px solid #eee;">...detail item...</div>` : ''}
+        
+              ${state.expandedHistory === t.id ? `
+                <div style="margin-top:15px; padding-top:15px; border-top:1px dashed #eee;">
+                  <table style="width:100%; font-size:13px; border-collapse:collapse;">
+                    <thead>
+                      <tr style="color:var(--text-muted); text-align:left;">
+                        <th style="padding-bottom:8px;">Item</th>
+                        <th style="text-align:center;">Qty</th>
+                        <th style="text-align:right;">Subtotal</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${t.items.map(item => `
+                        <tr>
+                          <td style="padding:5px 0;">${item.name}</td>
+                          <td style="text-align:center;">${item.qty}</td>
+                          <td style="text-align:right;">Rp ${formatRupiah(item.price * item.qty)}</td>
+                        </tr>
+                      `).join('')}
+                    </tbody>
+                  </table>
+                  <div style="margin-top:10px; padding-top:10px; border-top:1px solid #f1f5f9; text-align:right; font-size:12px; color:var(--text-muted);">
+                    Metode: ${t.paymentMethod || 'Tunai'}
+                  </div>
+                </div>
+              ` : ''}
             </div>
           `).join("")}
         </div>
@@ -468,9 +516,27 @@ function toggleSelectAll(){
   renderHistory();
 }
 
+async function reprintReceipt(trxId) {
+    const trx = state.transactions.find(t => t.id === trxId);
+    if (!trx) return showToast("Transaksi tidak ditemukan!");
+
+    if (!state.printerDevice) {
+        showToast("Printer belum terhubung. Silakan klik tombol Printer di sidebar.");
+        return;
+    }
+
+    try {
+        // Panggil fungsi print yang sudah kamu punya, tapi arahkan ke data transaksi ini
+        await printReceipt(trx.items, trx.total, trx.paymentMethod || 'Tunai', trxId);
+        console.log("Cetak ulang berhasil");
+    } catch (error) {
+        showToast("Gagal mencetak: " + error);
+    }
+}
+
 async function deleteSelected(){
   if(state.selectedHistory.size===0){
-    alert("Tidak ada yang dipilih");
+    showToast("Tidak ada yang dipilih");
     return;
   }
 
@@ -500,10 +566,24 @@ function renderMenuManager(){
   app.innerHTML = `
     <div class="pos-container">
       <aside class="sidebar">
-        <div class="nav-item" onclick="renderKasir()"><i>🏠</i><span>Kasir</span></div>
-        <div class="nav-item" onclick="renderHistory()"><i>📋</i><span>Riwayat</span></div>
-        <div class="nav-item active" onclick="renderMenuManager()"><i>⚙️</i><span>Kelola</span></div>
-        <div class="nav-item" style="margin-top:auto" onclick="logout()"><i>🚪</i><span>Keluar</span></div>
+        <div class="nav-item ${state.currentView==='kasir'?'active':''}" onclick="renderKasir()">
+          <i>🏠</i><span>Kasir</span>
+        </div>
+        <div class="nav-item ${state.currentView==='history'?'active':''}" onclick="renderHistory()">
+          <i>📋</i><span>Riwayat</span>
+        </div>
+        <div class="nav-item ${state.currentView==='menuManager' || state.currentView==='openCategory'?'active':''}" onclick="renderMenuManager()">
+          <i>⚙️</i><span>Kelola</span>
+        </div>
+        
+        <div style="margin-top: auto; width: 100%;">
+          <div class="nav-item" onclick="connectPrinter()" style="margin-bottom: 20px;">
+            <i>🖨️</i><span>Printer</span>
+          </div>
+          <div class="nav-item logout" onclick="logout()">
+            <i>🚪</i><span>Keluar</span>
+          </div>
+        </div>
       </aside>
 
       <main class="main-content" style="padding:30px; overflow-y:auto;">
@@ -568,10 +648,24 @@ function openCategory(id){
   app.innerHTML = `
     <div class="pos-container">
       <aside class="sidebar">
-        <div class="nav-item" onclick="renderKasir()"><i>🏠</i><span>Kasir</span></div>
-        <div class="nav-item" onclick="renderHistory()"><i>📋</i><span>Riwayat</span></div>
-        <div class="nav-item active" onclick="renderMenuManager()"><i>⚙️</i><span>Kelola</span></div>
-        <div class="nav-item" style="margin-top:auto" onclick="logout()"><i>🚪</i><span>Keluar</span></div>
+        <div class="nav-item ${state.currentView==='kasir'?'active':''}" onclick="renderKasir()">
+          <i>🏠</i><span>Kasir</span>
+        </div>
+        <div class="nav-item ${state.currentView==='history'?'active':''}" onclick="renderHistory()">
+          <i>📋</i><span>Riwayat</span>
+        </div>
+        <div class="nav-item ${state.currentView==='menuManager' || state.currentView==='openCategory'?'active':''}" onclick="renderMenuManager()">
+          <i>⚙️</i><span>Kelola</span>
+        </div>
+        
+        <div style="margin-top: auto; width: 100%;">
+          <div class="nav-item" onclick="connectPrinter()" style="margin-bottom: 20px;">
+            <i>🖨️</i><span>Printer</span>
+          </div>
+          <div class="nav-item logout" onclick="logout()">
+            <i>🚪</i><span>Keluar</span>
+          </div>
+        </div>
       </aside>
 
       <main class="main-content" style="padding:20px; display:flex; flex-direction:column; height:100vh;">
@@ -708,7 +802,7 @@ function toggleSelectAllMenu(categoryId){
 async function deleteSelectedMenus(categoryId){
 
   if(state.selectedMenus.size===0){
-    alert("Tidak ada yang dipilih");
+    showToast("Tidak ada yang dipilih");
     return;
   }
 
@@ -726,4 +820,38 @@ async function deleteSelectedMenus(categoryId){
 
   state.selectedMenus.clear();
   openCategory(categoryId);
+}
+
+function showToast(message, type = 'success') {
+    let container = document.getElementById('toast-container') || createToastContainer();
+
+    // LOGIKA PENYEDERHANAAN PESAN (Agar tetap minimalis)
+    let cleanMessage = message;
+    if (message.includes('auth/invalid-credential') || message.includes('incorrect')) {
+        cleanMessage = "Email atau Password salah.";
+    } else if (message.includes('network-request-failed')) {
+        cleanMessage = "Koneksi internet terganggu.";
+    } else if (message.length > 60) {
+        cleanMessage = message.substring(0, 60) + "..."; // Potong jika terlalu panjang
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    
+    const icon = type === 'success' ? '✅' : '⚠️';
+    toast.innerHTML = `<span>${icon}</span> <span>${cleanMessage}</span>`;
+
+    container.appendChild(toast);
+
+    setTimeout(() => {
+        toast.style.animation = 'fadeOut 0.3s ease-in forwards';
+        setTimeout(() => toast.remove(), 300);
+    }, 4000); // 4 detik agar cukup waktu membaca pesan yang agak panjang
+}
+
+function createToastContainer() {
+    const container = document.createElement('div');
+    container.id = 'toast-container';
+    document.body.appendChild(container);
+    return container;
 }
