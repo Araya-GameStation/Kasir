@@ -1,36 +1,46 @@
 // ============================================
-// APP UI OVERRIDE - PREMIUM LAYOUT
+// APP UI
 // ============================================
 
 function renderLogin(){
   app.innerHTML = `
-    <div class="login-wrapper">
-      <div class="login-card">
-        <h2>Login Admin</h2>
-        <input id="email" placeholder="Email">
-        <input id="password" type="password" placeholder="Password">
-        <button onclick="login()">Login</button>
+    <div class="app">
+      <div class="login-wrapper">
+        <div class="login-card">
+          <h2>Login Admin</h2>
+          <input id="email" placeholder="Email">
+          <input id="password" type="password" placeholder="Password">
+          <button onclick="login()">Login</button>
+        </div>
       </div>
     </div>
   `;
 }
 
-// ================= KASIR UI =================
+// ================= GLOBAL HEADER =================
+
+function renderHeader(title, showBack=false, backAction="renderKasir()"){
+  return `
+    <div class="app-header">
+      <div class="header-left">
+        ${showBack ? `<button class="back-btn" onclick="${backAction}">←</button>` : ""}
+        <h2>${title}</h2>
+      </div>
+      <div class="header-right">
+        <button onclick="connectPrinter()">Printer</button>
+        <button onclick="renderHistory()">Riwayat</button>
+        <button onclick="renderMenuManager()">Kelola</button>
+        <button onclick="logout()">Logout</button>
+      </div>
+    </div>
+  `;
+}
+
+// ================= KASIR =================
 
 function renderKasir(){
 
   state.currentView="kasir";
-
-  const sortedCategories = [
-    ...state.categories.filter(c=>!c.system)
-      .sort((a,b)=>a.name.localeCompare(b.name)),
-    ...state.categories.filter(c=>c.system)
-  ];
-
-  const categoryNames = [
-    "ALL",
-    ...sortedCategories.map(c=>c.name)
-  ];
 
   const filteredMenus = (
     state.selectedCategory === "ALL"
@@ -42,144 +52,148 @@ function renderKasir(){
   ).sort((a,b)=>a.name.localeCompare(b.name));
 
   app.innerHTML = `
-    <div class="pos">
-      <div class="left">
+    <div class="app">
+      ${renderHeader("KASIR - GARIS WAKTU")}
 
-        <div class="top-bar">
-          <h2>KASIR - GARIS WAKTU</h2>
-          <div class="nav-buttons">
-            <button onclick="connectPrinter()">Printer</button>
-            <button onclick="renderHistory()">Riwayat</button>
-            <button onclick="renderMenuManager()">Kelola</button>
-            <button onclick="logout()">Logout</button>
-          </div>
-        </div>
+      <div class="app-body">
 
-        <div class="category-bar">
-          ${categoryNames.map(c=>`
-            <button 
-              onclick="selectCategory('${c}')"
-              class="${state.selectedCategory===c?'active':''}">
-              ${c}
+        <div class="menu-section">
+
+          <div class="category-bar">
+            <button onclick="selectCategory('ALL')" 
+              class="${state.selectedCategory==='ALL'?'active':''}">
+              ALL
             </button>
-          `).join("")}
+            ${state.categories.map(c=>`
+              <button onclick="selectCategory('${c.name}')" 
+                class="${state.selectedCategory===c.name?'active':''}">
+                ${c.name}
+              </button>
+            `).join("")}
+          </div>
+
+          <div class="menu-grid">
+            ${filteredMenus.map(m=>{
+              const disabled = m.useStock && m.stock<=0;
+              return `
+                <div 
+                  class="card ${disabled?'disabled':''}"
+                  onclick="addToCart('${m.id}')">
+                  <div class="menu-name">${m.name}</div>
+                  <div class="menu-price">Rp ${formatRupiah(m.price)}</div>
+                  ${m.useStock?`<div class="menu-stock">Stok: ${m.stock}</div>`:''}
+                  ${disabled?'<div class="out-stock">Stok Habis</div>':''}
+                </div>
+              `;
+            }).join("")}
+          </div>
+
         </div>
 
-        <div class="menu-grid">
-          ${filteredMenus.map(m=>{
-            const disabled = m.useStock && m.stock<=0;
-            return `
-              <div 
-                class="card ${disabled?'disabled':''}"
-                onclick="addToCart('${m.id}')">
-                <div class="menu-name">${m.name}</div>
-                <div class="menu-price">Rp ${formatRupiah(m.price)}</div>
-                ${m.useStock?`<div class="menu-stock">Stok: ${m.stock}</div>`:''}
-                ${disabled?'<div class="out-stock">Stok Habis</div>':''}
-              </div>
-            `;
-          }).join("")}
-        </div>
+        <div class="order-section">
 
-      </div>
-
-      <div class="right">
-        <h3>Pesanan</h3>
-
-        <div class="cart-list">
-          ${state.cart.map(i=>`
-            <div class="cart-item">
-              <div>
-                ${i.name}<br>
-                <small>${i.qty} x Rp ${formatRupiah(i.price)}</small>
+          <div class="order-list">
+            ${state.cart.map(i=>`
+              <div class="cart-item">
+                <div>
+                  ${i.name}<br>
+                  <small>${i.qty} x Rp ${formatRupiah(i.price)}</small>
+                </div>
+                <div>
+                  Rp ${formatRupiah(i.price*i.qty)}<br>
+                  <button onclick="changeQty('${i.id}',-1)">-</button>
+                  <button onclick="changeQty('${i.id}',1)">+</button>
+                </div>
               </div>
-              <div>
-                Rp ${formatRupiah(i.price*i.qty)}<br>
-                <button class="qty-btn" onclick="changeQty('${i.id}',-1)">-</button>
-                <button class="qty-btn" onclick="changeQty('${i.id}',1)">+</button>
-              </div>
+            `).join("")}
+          </div>
+
+          <div class="order-footer">
+            <div class="total">
+              Total: Rp ${formatRupiah(getTotal())}
             </div>
-          `).join("")}
-        </div>
 
-        <div class="total">
-          Total: Rp ${formatRupiah(getTotal())}
-        </div>
+            <div class="quick-pay">
+              <button onclick="setPay(10000)">10K</button>
+              <button onclick="setPay(20000)">20K</button>
+              <button onclick="setPay(50000)">50K</button>
+              <button onclick="setPay(100000)">100K</button>
+              <button onclick="setPay(getTotal())">Pas</button>
+            </div>
 
-        <div class="quick-pay">
-          <button onclick="setPay(10000)">10K</button>
-          <button onclick="setPay(20000)">20K</button>
-          <button onclick="setPay(50000)">50K</button>
-          <button onclick="setPay(100000)">100K</button>
-          <button onclick="setPay(getTotal())">Pas</button>
-        </div>
+            <input id="payInput" type="text" placeholder="Bayar" oninput="formatInputRupiah(this)">
+            <button class="pay-btn" onclick="bayar()">Bayar</button>
+          </div>
 
-        <input id="payInput" type="text" placeholder="Bayar" oninput="formatInputRupiah(this)">
-        <button id="btnBayar" class="pay-btn" onclick="bayar()">Bayar</button>
+        </div>
 
       </div>
     </div>
   `;
 }
 
-// ================= HISTORY UI =================
+// ================= RIWAYAT =================
 
 function renderHistory(){
 
   state.currentView="history";
 
   app.innerHTML=`
-    <div class="page">
-      <div class="page-header">
-        <h2>Riwayat Transaksi</h2>
-        <button onclick="renderKasir()">Kembali</button>
-      </div>
+    <div class="app">
+      ${renderHeader("Riwayat Transaksi", true)}
 
-      <div class="history-list">
-        ${[...state.transactions]
-          .sort((a,b)=>{
-            const da = new Date(a.date.seconds? a.date.seconds*1000 : a.date);
-            const db = new Date(b.date.seconds? b.date.seconds*1000 : b.date);
-            return db - da;
-          })
-          .map(t=>`
-          <div class="history-item">
-            <div>
-              ${new Date(t.date.seconds? t.date.seconds*1000 : t.date).toLocaleString()}
-              <br><strong>Rp ${formatRupiah(t.total)}</strong>
+      <div class="app-body single">
+
+        <div class="history-list">
+          ${[...state.transactions]
+            .sort((a,b)=>{
+              const da = new Date(a.date.seconds? a.date.seconds*1000 : a.date);
+              const db = new Date(b.date.seconds? b.date.seconds*1000 : b.date);
+              return db - da;
+            })
+            .map(t=>`
+            <div class="history-item">
+              <div>
+                ${new Date(t.date.seconds? t.date.seconds*1000 : t.date).toLocaleString()}
+                <br><strong>Rp ${formatRupiah(t.total)}</strong>
+              </div>
+              <button onclick="toggleDetail('${t.id}')">Detail</button>
             </div>
-            <button onclick="toggleDetail('${t.id}')">Detail</button>
-          </div>
-        `).join("")}
+          `).join("")}
+        </div>
+
       </div>
     </div>
   `;
 }
 
-// ================= MENU MANAGER UI =================
+// ================= KELOLA MENU =================
 
 function renderMenuManager(){
 
   state.currentView="menuManager";
 
   app.innerHTML=`
-    <div class="page">
-      <div class="page-header">
-        <h2>Kelola Kategori</h2>
-        <button onclick="renderKasir()">Kembali</button>
-      </div>
+    <div class="app">
+      ${renderHeader("Kelola Menu", true)}
 
-      <input id="newCategory" placeholder="Nama Kategori">
-      <button onclick="addCategory()">Tambah</button>
+      <div class="app-body">
 
-      <div class="category-list">
-        ${state.categories.map(c=>`
-          <div class="category-item">
-            ${c.name}
-            ${!c.system?`<button onclick="deleteCategory('${c.id}')">Hapus</button>`:''}
-            <button onclick="openCategory('${c.id}')">Buka</button>
-          </div>
-        `).join("")}
+        <div class="menu-list-section">
+          ${state.menus.map(m=>`
+            <div class="menu-row">
+              ${m.name} - Rp ${formatRupiah(m.price)}
+            </div>
+          `).join("")}
+        </div>
+
+        <div class="menu-form-section">
+          <h3>Tambah Menu</h3>
+          <input id="menuName" placeholder="Nama Menu">
+          <input id="menuPrice" type="number" placeholder="Harga">
+          <button onclick="addMenu()">Tambah</button>
+        </div>
+
       </div>
     </div>
   `;
