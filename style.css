@@ -1,69 +1,54 @@
+
+/* =====================================================
+   DESAIN X - STRUCTURE FIRST
+   Fokus: Layout, Scroll Control, Proportion
+===================================================== */
+
 :root{
  --bg:#f3f4f6;
  --panel:#ffffff;
- --primary-dark:#0f172a;
- --accent:#4f46e5;
- --accent-hover:#4338ca;
+ --accent:#6366f1;
  --accent-soft:#e0e7ff;
- --text:#111827;
+ --text:#1f2937;
  --muted:#6b7280;
- --border:#e5e7eb;
- --danger:#dc2626;
- --success:#16a34a;
 }
 
 *{
  box-sizing:border-box;
 }
 
-body{
+html,body{
  margin:0;
- font-family:Segoe UI, system-ui, sans-serif;
+ height:100%;
+ font-family:Segoe UI,sans-serif;
  background:var(--bg);
  color:var(--text);
- font-size:18px;
 }
 
-/* ================= LOGIN ================= */
-
-.login-wrapper{
+body{
  display:flex;
- height:100vh;
- align-items:center;
- justify-content:center;
+ flex-direction:column;
 }
 
-.login-card{
- background:var(--panel);
- padding:40px;
- width:380px;
- border-radius:18px;
- box-shadow:0 20px 40px rgba(0,0,0,0.06);
- animation:fadeIn 0.25s ease;
+h2,h3{
+ margin:8px 0 12px 0;
 }
 
-.login-card h2{
- margin-bottom:20px;
- font-size:26px;
- font-weight:700;
- text-align:center;
- color:var(--primary-dark);
+hr{
+ border:none;
+ height:1px;
+ background:#e5e7eb;
+ margin:16px 0;
 }
-
-/* ================= GLOBAL BUTTON ================= */
 
 button{
- padding:12px 20px;
+ padding:8px 12px;
  border:none;
- border-radius:14px;
+ border-radius:10px;
  background:var(--accent-soft);
- color:var(--primary-dark);
- font-weight:600;
+ color:var(--text);
  cursor:pointer;
- transition:
-  background 0.18s ease,
-  transform 0.12s ease,
-  box-shadow 0.18s ease;
+ transition:0.2s;
 }
 
 button:hover{
@@ -71,189 +56,208 @@ button:hover{
  color:white;
 }
 
-button:active{
- transform:scale(0.97);
-}
-
-button.primary{
- background:var(--accent);
- color:white;
-}
-
-button.primary:hover{
- background:var(--accent-hover);
-}
-
-/* ================= INPUT ================= */
-
 input{
- width:100%;
- padding:12px;
- border-radius:14px;
- border:1px solid var(--border);
- margin-bottom:12px;
- font-size:16px;
+ padding:8px;
+ border-radius:10px;
+ border:1px solid #ddd;
+ margin:6px 0;
 }
 
-/* ================= LAYOUT ================= */
+/* ====================== KASIR ======================== */
 
 .pos{
  display:flex;
- height:100vh;
+ height:calc(100vh - 140px);
+ gap:20px;
 }
-
-/* LEFT PANEL (MENU) */
-
-.left{
- flex:7;
- padding:24px;
- overflow:auto;
-}
-
-/* RIGHT PANEL (CART) */
-
-.right{
- flex:3;
- background:var(--panel);
- padding:24px;
- border-left:1px solid var(--border);
- display:flex;
- flex-direction:column;
- box-shadow:-8px 0 20px rgba(0,0,0,0.03);
-}
-
-/* ================= CATEGORY ================= */
 
 .category-bar{
  display:flex;
- gap:12px;
- margin-bottom:20px;
  flex-wrap:wrap;
-}
-
-.category-bar button{
- background:white;
- border:1px solid var(--border);
+ gap:8px;
+ margin-bottom:12px;
 }
 
 .category-bar button.active{
  background:var(--accent);
  color:white;
- border-color:var(--accent);
 }
-
-/* ================= MENU GRID ================= */
 
 .menu-grid{
  display:grid;
- grid-template-columns:repeat(4,1fr);
- gap:18px;
+ grid-template-columns:repeat(auto-fill,minmax(120px,1fr));
+ gap:12px;
+ overflow:auto;
+ padding-right:4px;
 }
 
-.card{
+.menu-card{
  background:var(--panel);
- padding:20px;
- border-radius:18px;
- text-align:center;
- box-shadow:0 10px 25px rgba(0,0,0,0.05);
- min-height:120px;
- display:flex;
- flex-direction:column;
- justify-content:center;
+ padding:12px;
+ border-radius:12px;
+ box-shadow:0 6px 18px rgba(0,0,0,0.05);
  cursor:pointer;
- transition:
-  transform 0.15s ease,
-  box-shadow 0.18s ease;
+ text-align:center;
+ transition:0.2s;
 }
 
-.card:hover{
- transform:translateY(-4px);
- box-shadow:0 18px 30px rgba(0,0,0,0.08);
+.menu-card:hover{
+ transform:translateY(-3px);
 }
 
-.card:active{
- transform:scale(0.97);
+.menu-card.disabled{
+ opacity:0.5;
+ pointer-events:none;
 }
 
-/* ================= CART ================= */
+.stock-habis{
+ color:#dc2626;
+ font-size:12px;
+}
+
+.cart-list{
+ overflow:auto;
+ max-height:300px;
+ padding-right:4px;
+}
 
 .cart-item{
  display:flex;
  justify-content:space-between;
  align-items:center;
- margin-bottom:14px;
- font-size:16px;
+ margin-bottom:8px;
+ gap:8px;
 }
 
-.total{
- font-size:24px;
- font-weight:700;
- margin-top:20px;
- padding:12px;
- border-radius:14px;
- background:rgba(79,70,229,0.06);
+.cart-total{
+ margin-top:12px;
+ font-weight:bold;
 }
 
-.total.flash{
- animation:pulse 0.25s ease;
+.quick-pay{
+ display:flex;
+ flex-wrap:wrap;
+ gap:8px;
+ margin:12px 0;
 }
 
-/* ================= HISTORY ================= */
+/* ===================== RIWAYAT ======================= */
 
-.history-item{
- background:white;
- padding:16px;
- border-radius:16px;
+.history-actions{
+ display:flex;
+ gap:10px;
  margin-bottom:12px;
- box-shadow:0 8px 18px rgba(0,0,0,0.04);
+}
+
+.recap-box{
+ background:var(--panel);
+ padding:12px;
+ border-radius:12px;
+ margin-bottom:12px;
+}
+
+.transaction-list{
+ max-height:400px;
+ overflow:auto;
+ padding-right:4px;
+}
+
+.transaction-card{
+ padding:12px;
+ border-bottom:1px solid #eee;
+}
+
+.transaction-header{
+ display:flex;
+ align-items:center;
+ gap:10px;
+ justify-content:space-between;
+}
+
+.transaction-detail{
+ margin-top:10px;
+ font-size:13px;
+ color:var(--muted);
+}
+
+/* ================= MENU MANAGER ====================== */
+
+.category-add{
+ display:flex;
+ gap:10px;
+ align-items:center;
+ margin-bottom:16px;
+}
+
+.category-list{
+ max-height:400px;
+ overflow:auto;
+}
+
+.category-item{
  display:flex;
  justify-content:space-between;
  align-items:center;
- transition:0.18s ease;
+ padding:10px 0;
+ border-bottom:1px solid #eee;
 }
 
-.history-item:hover{
- transform:translateY(-2px);
- box-shadow:0 12px 22px rgba(0,0,0,0.06);
+/* ================= OPEN CATEGORY ===================== */
+
+.menu-add-box{
+ display:flex;
+ flex-direction:column;
+ gap:6px;
+ margin-bottom:16px;
+ max-width:300px;
 }
 
-.history-detail{
- font-size:14px;
- color:var(--muted);
- margin-top:8px;
+.menu-bulk-actions{
+ display:flex;
+ gap:10px;
+ margin-bottom:12px;
 }
 
-/* ================= ANIMATION ================= */
-
-@keyframes fadeIn{
- from{opacity:0; transform:translateY(8px);}
- to{opacity:1; transform:translateY(0);}
+.menu-list{
+ max-height:400px;
+ overflow:auto;
 }
 
-@keyframes pulse{
- 0%{background:rgba(79,70,229,0.12);}
- 100%{background:rgba(79,70,229,0.06);}
+.menu-item{
+ display:flex;
+ align-items:center;
+ gap:10px;
+ padding:8px 0;
+ border-bottom:1px solid #eee;
 }
 
-/* ================= RESPONSIVE ================= */
+/* ================= LOGIN ============================= */
 
-@media (max-width:1200px){
- .menu-grid{
-  grid-template-columns:repeat(3,1fr);
- }
+.login-wrapper{
+ height:100vh;
+ display:flex;
+ align-items:center;
+ justify-content:center;
 }
+
+.login-card{
+ width:380px;
+ background:var(--panel);
+ padding:32px;
+ border-radius:16px;
+}
+
+/* ================= RESPONSIVE ======================== */
 
 @media (max-width:900px){
  .pos{
-  flex-direction:column;
+   flex-direction:column;
+   height:auto;
  }
-
- .menu-grid{
-  grid-template-columns:repeat(2,1fr);
- }
-
- .right{
-  border-left:none;
-  border-top:1px solid var(--border);
+ .cart-list,
+ .transaction-list,
+ .menu-list,
+ .category-list{
+   max-height:none;
  }
 }
