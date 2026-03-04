@@ -444,9 +444,11 @@ function toggleSelectAll() {
 async function reprintReceipt(trxId) {
   const trx = state.transactions.find(t => t.id === trxId);
   if (!trx) return showToast("Transaksi tidak ditemukan!", "error");
-  if (typeof printReceipt !== "function") return showToast("Fungsi cetak belum siap", "error");
+  if (typeof printStruk !== "function") return showToast("Fungsi cetak belum tersedia", "error");
+  
   try {
-    await printReceipt(trx.items, trx.total, trx.paymentMethod || 'Tunai', trxId);
+    await printStruk(trx);
+    showToast("Mencetak ulang struk...");
   } catch (error) {
     showToast("Gagal mencetak: " + error, "error");
   }
