@@ -56,7 +56,7 @@ function renderLogin() {
           <input id="password" type="password" class="login-input" placeholder="Kata Sandi">
         </div>
         <button class="btn-login-premium" onclick="login()">Masuk Sekarang</button>
-        <p style="margin-top: 30px; font-size: 12px; color: #cbd5e1; letter-spacing: 1px;">VERSI 2.0.4</p>
+        <p style="margin-top: 30px; font-size: 12px; color: #cbd5e1; letter-spacing: 1px;">VERSI 0.0.1</p>
       </div>
     </div>
   `;
