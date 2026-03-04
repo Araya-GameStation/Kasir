@@ -1,0 +1,15 @@
+{
+  "name": "Kasir Garis Waktu",
+  "short_name": "GarisWaktu",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#f1f5f9",
+  "theme_color": "#1e1b4b",
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
