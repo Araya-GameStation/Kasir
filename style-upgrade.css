@@ -1896,3 +1896,190 @@
 
 .text-xs { font-size: 0.7rem; }
 .bg-info { background: var(--info) !important; }
+
+/* --- MOBILE RESPONSIVENESS UPGRADES --- */
+
+/* Sidebar drawer styling for mobile */
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed !important;
+    left: -260px !important;
+    top: 0;
+    bottom: 0;
+    height: 100vh !important;
+    width: 260px !important;
+    z-index: 9999 !important;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.4) !important;
+    transition: left 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+    background: var(--surface) !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .dark .sidebar {
+    background: var(--dk-surface) !important;
+  }
+
+  .sidebar.open {
+    left: 0 !important;
+  }
+
+  .mobile-menu-toggle {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--text-light);
+    font-size: 1.2rem;
+    padding: 8px 12px 8px 0;
+    cursor: pointer;
+    margin-right: 8px;
+    transition: color 0.15s;
+  }
+
+  .dark .mobile-menu-toggle {
+    color: var(--dk-text-2);
+  }
+
+  .mobile-menu-toggle:hover {
+    color: var(--primary);
+  }
+}
+
+@media (min-width: 769px) {
+  .mobile-menu-toggle {
+    display: none !important;
+  }
+  .pos-mobile-tabs {
+    display: none !important;
+  }
+}
+
+/* Header tweaks */
+@media (max-width: 640px) {
+  .header-email {
+    display: none !important;
+  }
+}
+
+/* Cashier tabbed layout and header stack */
+@media (max-width: 768px) {
+  .pos-mobile-tabs {
+    display: flex !important;
+    flex-shrink: 0;
+    background: var(--surface) !important;
+    border-bottom: 1px solid var(--border) !important;
+    padding: 8px 12px;
+    gap: 8px;
+  }
+
+  .dark .pos-mobile-tabs {
+    background: var(--dk-surface) !important;
+    border-bottom-color: var(--dk-border) !important;
+  }
+
+  .pos-mobile-tab-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1px solid var(--border) !important;
+    background: var(--surface2) !important;
+    color: var(--text-light) !important;
+    font-weight: 700;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s ease !important;
+    border-radius: 4px !important;
+  }
+
+  .dark .pos-mobile-tab-btn {
+    border-color: var(--dk-border) !important;
+    background: var(--dk-surface-2) !important;
+    color: var(--dk-text-2) !important;
+  }
+
+  .pos-mobile-tab-btn.active {
+    background: var(--primary) !important;
+    border-color: var(--primary) !important;
+    color: #ffffff !important;
+  }
+
+  .pos-mobile-cart-badge {
+    background: var(--danger) !important;
+    color: #ffffff !important;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 999px !important;
+    margin-left: 4px;
+    display: inline-block;
+  }
+
+  /* Sticky sub-header stack */
+  .pos-header-sticky {
+    height: auto !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+    padding: 8px 8px !important;
+    margin: 0 0 10px 0 !important;
+  }
+
+  .pos-search-wrapper {
+    width: 100% !important;
+  }
+
+  #category-scroll-container {
+    height: 38px !important;
+    width: 100% !important;
+  }
+
+  /* Show / Hide panels based on selected tab */
+  .show-menu-tab .pos-left-panel {
+    display: flex !important;
+  }
+
+  .show-menu-tab .pos-right-panel {
+    display: none !important;
+  }
+
+  .show-cart-tab .pos-left-panel {
+    display: none !important;
+  }
+
+  .show-cart-tab .pos-right-panel {
+    display: flex !important;
+    width: 100% !important;
+  }
+
+  /* Constrain Cashier layout height and allow internal scroll */
+  .pos-layout {
+    height: calc(100vh - 120px) !important;
+    overflow: hidden !important;
+    gap: 0 !important;
+  }
+
+  .pos-left-panel, 
+  .pos-right-panel {
+    height: 100% !important;
+  }
+
+  /* Overrides for checkout panel constraints on mobile */
+  .checkout-panel,
+  .pos-checkout-panel {
+    height: 100% !important;
+    width: 100% !important;
+    border-left: none !important;
+  }
+
+  .pos-cart-body {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    height: auto !important;
+  }
+}
+
