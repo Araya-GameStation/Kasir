@@ -23,8 +23,19 @@ function renderKasir() {
   ).filter(m => !state.kasirSearchQuery || m.name.toLowerCase().includes(state.kasirSearchQuery.toLowerCase()))
     .sort((a, b) => a.name.localeCompare(b.name));
 
+  const activeTab = state.activeMobileTab || 'menu';
+  const cartQty = state.cart.reduce((s, i) => s + i.qty, 0);
   const content = `
-    <div class="pos-layout">
+    <div class="pos-layout ${activeTab === 'menu' ? 'show-menu-tab' : 'show-cart-tab'}">
+      <div class="pos-mobile-tabs">
+        <button onclick="window.setMobileTab('menu')" class="pos-mobile-tab-btn ${activeTab === 'menu' ? 'active' : ''}">
+          <i class="fas fa-utensils"></i> Menu
+        </button>
+        <button onclick="window.setMobileTab('cart')" class="pos-mobile-tab-btn ${activeTab === 'cart' ? 'active' : ''}">
+          <i class="fas fa-shopping-cart"></i> Keranjang
+          ${cartQty > 0 ? `<span class="pos-mobile-cart-badge">${cartQty}</span>` : ''}
+        </button>
+      </div>
       <div class="pos-left-panel">
         <div class="smart-header pos-header-sticky">
           <div id="category-scroll-container">
@@ -961,3 +972,8 @@ window._clearKasirSearch = function () {
 };
 window.renderModalPaymentContent = renderModalPaymentContent;
 window._loadOpenBill = _loadOpenBill;
+
+window.setMobileTab = function (tab) {
+  state.activeMobileTab = tab;
+};
+

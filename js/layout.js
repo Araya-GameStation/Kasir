@@ -36,7 +36,7 @@ window.Layout = {
     const pengeluaranCount = (window.state.pengeluaran || []).filter(p => p.sessionId === window.state.currentSession?.id).length;
 
     return `
-      <aside class="sidebar ${window.sidebarCollapsed ? 'collapsed' : ''}">
+      <aside class="sidebar ${window.sidebarCollapsed ? 'collapsed' : ''} ${!window.sidebarCollapsed ? 'open' : ''}">
         <div class="sidebar-header">
           <div class="sidebar-header-inner">
             <div class="brand-wrap ${window.sidebarCollapsed ? 'brand-hidden' : ''}">
@@ -149,6 +149,9 @@ window.Layout = {
     const isDark = document.documentElement.classList.contains('dark');
     return `
       <header class="smart-header header-bar">
+        <button onclick="window.toggleSidebar()" class="mobile-menu-toggle" aria-label="Menu">
+          <i class="fas fa-bars"></i>
+        </button>
         <h1 class="header-title">${this.getPageTitle()}</h1>
         <div class="header-right">
           ${window.state.currentSession ? `

@@ -19,6 +19,11 @@ window.triggerPageTransition = function(direction = 'forward') {
 
 window.navigateTo = function(view) {
     if (_lastView === view) return;
+    if (window.innerWidth <= 768) {
+        sidebarCollapsed = true;
+        window.sidebarCollapsed = true;
+        localStorage.setItem('sidebarCollapsed', true);
+    }
     const fromIdx = NAV_ORDER.indexOf(_lastView);
     const toIdx   = NAV_ORDER.indexOf(view);
     const dir = (fromIdx !== -1 && toIdx !== -1 && toIdx < fromIdx) ? 'back' : 'forward';
@@ -47,7 +52,7 @@ function createState(initialState) {
                 'currentView','cart','selectedCategory','selectedTable',
                 'selectedPaymentMethod','cashAmount','qrisAmount',
                 'transactions','selectedHistory','selectedMenus',
-                'modifierGroups','openBills'
+                'modifierGroups','openBills','activeMobileTab'
             ].includes(property);
             if (!_isRendering && shouldRender) {
                 _isRendering = true;
@@ -75,7 +80,8 @@ let state = createState({
     cashAmount: 0, qrisAmount: 0,
     lastCategoryScroll: 0, lastMenuScroll: 0, lastCartScroll: 0,
     modifierGroups: [], openBills: [],
-    kasirSearchQuery: '', categorySearchQuery: ''
+    kasirSearchQuery: '', categorySearchQuery: '',
+    activeMobileTab: 'menu'
 });
 
 window.app = app;

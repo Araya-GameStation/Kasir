@@ -53,6 +53,18 @@ function _formatTgl(date) {
   return date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
+function _getOperationalDate(date, jb) {
+  const activeJb = jb || _jamBuka();
+  const d = new Date(date);
+  const hour = d.getHours();
+  const minute = d.getMinutes();
+  if (hour < activeJb.h || (hour === activeJb.h && minute < activeJb.m)) {
+    d.setDate(d.getDate() - 1);
+  }
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
 function _allTrx()        { return state.allTransactions || []; }
 function _allPengeluaran() { return state.pengeluaran || []; }
 function _allMutations()   { return state.stockMutations || []; }
@@ -572,8 +584,9 @@ function _initLaporanCharts(mode, isoKey) {
     const dayMap = {};
     trxList.forEach(t => {
       const d = _toDate(t.date);
-      const key = d.toLocaleDateString('id-ID', { weekday: 'short', day: '2-digit', month: 'short' });
-      const d0 = new Date(d); d0.setHours(0,0,0,0);
+      const opDate = _getOperationalDate(d);
+      const key = opDate.toLocaleDateString('id-ID', { weekday: 'short', day: '2-digit', month: 'short' });
+      const d0 = opDate;
       if (!dayMap[key]) dayMap[key] = { total: 0, count: 0, ts: d0.getTime() };
       dayMap[key].total += (t.total || 0);
       dayMap[key].count++;
@@ -624,8 +637,9 @@ function _initLaporanCharts(mode, isoKey) {
     const dayMap = {};
     trxList.forEach(t => {
       const d = _toDate(t.date);
-      const key = d.toLocaleDateString('id-ID', { weekday: 'short', day: '2-digit', month: 'short' });
-      const d0 = new Date(d); d0.setHours(0,0,0,0);
+      const opDate = _getOperationalDate(d);
+      const key = opDate.toLocaleDateString('id-ID', { weekday: 'short', day: '2-digit', month: 'short' });
+      const d0 = opDate;
       if (!dayMap[key]) dayMap[key] = { total: 0, count: 0, ts: d0.getTime() };
       dayMap[key].total += (t.total || 0);
       dayMap[key].count++;
@@ -916,8 +930,10 @@ window._exportLaporanPDF = async function(mode, isoKey) {
       } else if (mode === 'mingguan') {
         const dayMap = {};
         trxList.forEach(t => {
-          const d = _toDate(t.date); const k = d.toLocaleDateString('id-ID',{weekday:'short',day:'2-digit',month:'short'});
-          const d0 = new Date(d); d0.setHours(0,0,0,0);
+          const d = _toDate(t.date);
+          const opDate = _getOperationalDate(d);
+          const k = opDate.toLocaleDateString('id-ID',{weekday:'short',day:'2-digit',month:'short'});
+          const d0 = opDate;
           if (!dayMap[k]) dayMap[k] = { total: 0, ts: d0.getTime() };
           dayMap[k].total += (t.total || 0);
         });
@@ -933,8 +949,10 @@ window._exportLaporanPDF = async function(mode, isoKey) {
       } else if (mode === 'bulanan') {
         const dayMap = {};
         trxList.forEach(t => { 
-          const d=_toDate(t.date); const k=d.toLocaleDateString('id-ID',{weekday:'short',day:'2-digit',month:'short'}); 
-          const d0 = new Date(d); d0.setHours(0,0,0,0);
+          const d = _toDate(t.date);
+          const opDate = _getOperationalDate(d);
+          const k = opDate.toLocaleDateString('id-ID',{weekday:'short',day:'2-digit',month:'short'}); 
+          const d0 = opDate;
           if (!dayMap[k]) dayMap[k] = { total: 0, ts: d0.getTime() };
           dayMap[k].total += (t.total || 0);
         });
